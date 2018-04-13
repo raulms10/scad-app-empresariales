@@ -29,6 +29,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       // Ahora creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
       val query = conexion.createStatement
       val resultado = query.executeQuery("SELECT * FROM Agency")
+      resultado.next() // OJO!!! -> Esta instruccion es necesaria para poder ver/acceder correctamente al resultado
 
       // Si todo salio bien, entonces creamos un objeto agencia
       var agency = Agency(resultado.getString("nit"), resultado.getString("name"), resultado.getString("description"))
@@ -38,10 +39,10 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     }
     catch {
       // En caso de error, retornamos un mensaje al respecto
-      case unknown => BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+      case _: Throwable => BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
     }
     finally {
-      // Antes de terminar sea que la consulta sea exitosa o no, cerramos la conexion a la BD
+      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
       conexion.close()
     }
   }
