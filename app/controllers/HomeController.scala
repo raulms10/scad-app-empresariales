@@ -90,7 +90,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     else // En caso que si haya llegado un json con "algo" entonces
     {
       val cuerpoJson = request.body.asJson.get // Recuperamos el json
-      val llaves = cuerpoJson.as[JsObject].keys // Sacamos la lista de claves de dicho json en un Set (Conjunto)
+      val llaves = cuerpoJson.as[JsObject].keys // Sacamos la lista de claves (keys) de dicho json en un Set (Conjunto)
       
       // Y revisamos que si esten las 4 claves necesarias para realizar la busqueda
       // Por lo tanto, si NO estan todas las claves entonces
@@ -101,10 +101,10 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       }
       else // En caso que si esten los parametros entonces
       {
-        // Intento recuperar las fechas con sus claves correspondientes y formateandolas como Strings
+        // Intentamos recuperar las fechas con sus claves correspondientes y las formateamos (casteamos) como Strings
         // Nota: El metodo 'asOpt' trata de parsear el valor a recuperar con el tipo indicado,
         //       Si el tipo coincide con el tipo del valor entonces se retorna Option[Tipo] donde para conseguir el valor propiamente se debe usar .get
-        //       En caso que los tipos no coincidan entonces se retona None
+        //       En caso que los tipos no coincidan entonces se retorna None
         val arrivedDate = (cuerpoJson \ "checkIn").asOpt[String]
         val departureDate = (cuerpoJson \ "checkOut").asOpt[String]
         
@@ -119,7 +119,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
           // Calculo/obtengo el numero de dias que se quiere hospedar el cliente 
           val numDays = countDays(arrivedDate.get, departureDate.get)
           
-          // En caso que se presente un error con el calculo de fechas y se retorno -1 entonces
+          // En caso que se presente un error con el calculo de fechas (se debe obtener -1) entonces
           if (numDays == -1)
           {
             // Se aborta y en un json se dice que las fechas no estan bien escritas
@@ -127,35 +127,41 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
           }
           else // Si el calculo de los dias fue correcto entonces
           {
-            var auxQuery = "" // Creo una variable auxiliar en donde se escribira el fragmento de busqueda para los tipos de casa que quiere el cliente, por lo que...
-          
-            try { // Si los tipos de inmueble que quiere el cliente son varios y estan en un arreglo (O sea, una lista) entonces
-              var homeType = (cuerpoJson \ "type").as[List[String]] // Recupero y formateo los tipos de casa
+            // Creo una variable en donde se armara el fragmento de query que indicara que tipos de casas se van a buscar
+            // Nota: Esta se inicializa como: '' (comillas vacias) ya que si homeType no tiene un contenido correcto entonces que no se busque nada
+            var auxQuery = "`type`= ''"
+            
+            // Ahora, se intenta recuperar el valor de la clave 'type' como si fuera una lista
+            var homeType = (cuerpoJson \ "type").asOpt[List[String]]
+            
+            // Si 'type' NO es una lista entonces
+            if (homeType == None)
+            {
+              // Trato de recuperar el valor de 'type' como si fuera un String
+              var homeType = (cuerpoJson \ "type").asOpt[String]
               
-              if (homeType.isEmpty) // Si la lista esta vacia entonces
+              // Y si DE VERDAD lo ES entonces
+              if (!(homeType == None))
               {
-                auxQuery = "`type` LIKE '%'" // Se van a buscar: cualquier tipo de casa
+                // Se arma el fragmento de query con este unico valor de busqueda
+                auxQuery = s"`type`= '${homeType.get}'"
               }
-              else // Sino entonces
+            }
+            else // En caso que 'type' SI es una lista entonces
+            {
+              // Revisamos que la lista no este vacia y SI NO LO ESTA entonces
+              if (!(homeType.get.isEmpty))
               {
-                // Se van a buscar por cada uno de los tipos de casa definidos en la lista, por lo que...
-                auxQuery = s"`type`= '${homeType(0)}'" // Se escribe el primer tipo de casa a buscar
-                for (cont <- 1 until homeType.length) // Y para el resto se le concatena a lo ya escrito con OR
+                // Se arma el fragmento de query de busqueda con cada uno de los tipos de casa definidos en la lista, por lo que...
+                auxQuery = s"`type`= '${homeType.get(0)}'" // Se escribe el primer tipo de casa a buscar
+                for (cont <- 1 until homeType.get.length) // Y para el resto se le concatena a lo ya escrito con 'OR'
                 {
-                  auxQuery = auxQuery + s" OR `type`= '${homeType(cont)}'"
+                  auxQuery = auxQuery + s" OR `type`= '${homeType.get(cont)}'"
                 }
               }
             }
-            catch // En caso que el tipo de casa sea uno solo y se haya definido como una hilera entonces
-            {
-              case _: Throwable =>
-                // Se recupera y formatea el tipo de casa como una hilera
-                var homeType = (cuerpoJson \ "type").as[String]
-                // Y se arma el parametro de busqueda de tipo casa con este unico tipo
-                auxQuery = s"`type`= '${homeType}'"
-            }
             
-            // Ahora, se intenta recuperar el codigo de ciudad
+            // Despues, se intenta recuperar el codigo de ciudad
             val cityCode = (cuerpoJson \ "city").asOpt[String]
             
             // De modo que, si este codigo NO es una hilera entonces
@@ -166,31 +172,37 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
             }
             else // Sino entonces
             {
-              // Creo un Json el cual 
+              // Creo un Json vacio, en el cual se ira construyendo la respuesta final que se va a retornar
               var jsonResponse = Json.obj()
-        
+              
+              // Luego creamos una variable para realizar la conexion con la BD
               val conexion = db.getConnection()
           
-              try{
+              try
+              {
+                // Ahora creamos una variable para formular queries SQL
                 val query = conexion.createStatement
+                
+                // Como primer query, vamos a obtener los datos de la agencia y a formatear los mismos a un json
                 val resultado1 = query.executeQuery("SELECT * FROM Agency")
                 resultado1.next()
-                
                 var jsonInfoAgency= Json.obj("nit" -> resultado1.getString("nit"),
                                             "name" -> resultado1.getString("name"),
                                             "description" -> resultado1.getString("description"))
                 
+                // Una vez que tengamos los datos de la agencia en un json estos se adjuntaran al json de respuesta bajo la clave 'agency'
                 jsonResponse = jsonResponse + ("agency" -> jsonInfoAgency)
                 
+                // Ahora como segunda query, se van a consultar todos los inmuebles que esten en la ciudad indicada y que sean del tipo -o tipos- especificados
                 val resultado2 = query.executeQuery(s"""
                   SELECT h.id, h.name, h.description, h.address, h.latitude, h.longitude, c.name as 'city', th.nameType as 'type', h.rating, h.pricePerNight, h.thumbnail
                   FROM `Home` as h
                   JOIN City as c ON c.`code` = h.`city`
                   JOIN TypeHome as th ON th.`idType` = h.`type`
                   WHERE (`city`='${cityCode.get}') AND (${auxQuery});""")
-          
-                var arrayHomes = JsArray()
                 
+                // Despues, se crea un arreglo json vacio el cual se ira rellenando con jsons que tengan los datos de cada una de las casas
+                var arrayHomes = JsArray()
                 while (resultado2.next()){
                   var jsonAux = Json.obj("id" -> resultado2.getInt("id"),
                                          "name" -> resultado2.getString("name"),
@@ -206,15 +218,20 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                   arrayHomes = arrayHomes :+ jsonAux
                 }
                 
+                // Al terminar de rellenar el arreglo de inmuebles, dicho arreglo se adjunta al json de respuesta bajo la clave 'homes'
                 jsonResponse = jsonResponse + ("homes" -> arrayHomes)
+                
+                // Y se retorna el Json de respuesta
                 Ok(jsonResponse)
               }
-              catch {
+              catch
+              {
                 // En caso de error, retornamos un mensaje al respecto
-                case _: Throwable => BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+                case _: Throwable => BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error, mientras se consultaba la BD!"))
               }
-              finally {
-                // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
+              finally
+              {
+                // Y antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
                 conexion.close()
               }
             }
