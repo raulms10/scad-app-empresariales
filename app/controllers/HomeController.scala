@@ -119,13 +119,23 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
           // Calculo/obtengo el numero de dias que se quiere hospedar el cliente 
           val numDays = countDays(arrivedDate.get, departureDate.get)
           
-          // En caso que se presente un error con el calculo de fechas (se debe obtener -1) entonces
-          if (numDays == -1)
+          // Luego, si se presento un error con el calculo de fechas (se debe obtener 'None') entonces
+          if (numDays == None)
           {
             // Se aborta y en un json se dice que las fechas no estan bien escritas
             BadRequest(Json.obj("status" -> "Error", "message" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
           }
-          else // Si el calculo de los dias fue correcto entonces
+          else if (numDays.get < 0) // Por otro lado, si se obtiene que la diferencia es negativa entonces
+          {
+            // Tambien aborto ya que eso significa que las fechas no tienen el orden correcto
+            BadRequest(Json.obj("status" -> "Error", "message" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
+          }
+          else if (numDays.get == 0) // O si la diferencia es cero entonces
+          {
+            // Igualmente aborto porque el hospedaje minimo es de un dia
+            BadRequest(Json.obj("status" -> "Error", "message" -> "La reserva debe ser de por lo menos de un dia!"))
+          }
+          else // Ahora, si el calculo de los dias fue correcto entonces
           {
             // Creo una variable en donde se armara el fragmento de query que indicara que tipos de casas se van a buscar
             // Nota: Esta se inicializa como: '' (comillas vacias) ya que si homeType no tiene un contenido correcto entonces que no se busque nada
@@ -211,7 +221,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                                          "city" -> resultado2.getString("city"),
                                          "type" -> resultado2.getString("type"),
                                          "rating" -> resultado2.getDouble("rating"),
-                                         "totalAmount" -> numDays*resultado2.getDouble("pricePerNight"),
+                                         "totalAmount" -> (numDays.get)*resultado2.getDouble("pricePerNight"),
                                          "pricePerNight" -> resultado2.getDouble("pricePerNight"),
                                          "thumbnail" -> resultado2.getString("thumbnail")
                       )
@@ -241,8 +251,8 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     }
   }
   
-  // Metodo para calcular el numero de dias (valor absoluto) entre dos fechas
-  def countDays(date1: String, date2: String): Int = {
+  // Metodo para calcular el numero de dias entre dos fechas
+  def countDays(date1: String, date2: String): Option[Int] = {
     try
     {
       // En primer lugar tokenizamos la 1er fecha (ya sea que los delimitadores sean: '-' o '/')
@@ -263,13 +273,13 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       // Y creamos otro objeto datatime con los datos que obtuvimos de la segunda fecha
       val jodaDate2 = new DateTime(year2, month2, day2, 0, 0)
       
-      // Finalmente, calculamos el valor absoluto de la diferencia de fechas (en dias) y retornamos el resultado
+      // Finalmente, calculamos la diferencia de fechas (en dias) y retornamos el resultado (el cual estara "envuelto" como un option)
       val difference = Days.daysBetween(jodaDate1, jodaDate2);
-      difference.getDays.abs
+      Some(difference.getDays)
     }
     catch
     {
-      case _: Throwable => -1 // En caso de error se retorna -1 (Como indicativo de que sucedio un error)
+      case _: Throwable => None // En caso de error, se retorna None -nada- (Como indicativo de que sucedio un error)
     }
   }
 
