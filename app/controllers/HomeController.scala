@@ -9,6 +9,7 @@ import play.api.libs.json._
 import models.Agency
 import models.Booking
 import models.Home
+import models.Answer
 import play.api.db._ // Este es especialmente necesario para conectarse con la BD
 import org.joda.time.DateTime
 import org.joda.time.Days
@@ -29,30 +30,31 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       Ok(Json.toJson(result.body))
     }else{
       // En caso de error, retornamos un mensaje al respecto
-      Throwable => BadRequest(result.body)
+      BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
     }
   }
 
-  def getAgencyInfoFunction {
-|    // Primero creamos una variable para realizar la conexion con la BD
+  def getAgencyInfoFunction = {
+    // Primero creamos una variable para realizar la conexion con la BD
     val conexion = db.getConnection()
     try {
       // Luego creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
       val query = conexion.createStatement
-      val resultado = query.executeQuery("SELECT * FROM Agency")
+      val resultado = query.executeQuery("SELECT * FROM Agency");
       resultado.next() // OJO!!! -> Esta instruccion es necesaria para poder ver/acceder correctamente al resultado
 
-      // Si todo salio bien, entonces creamos un objeto agencia
-      var agency = Agency(resultado.getString("nit"), resultado.getString("name"), resultado.getString("description"))
-      return Request("OK", agency)
-    }
-    catch {
-      // En caso de error, retornamos un mensaje al respecto
-      case _: return Request("Error", Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
-    }
-    finally {
       // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
       conexion.close()
+
+      // Si todo salio bien, entonces creamos un objeto agencia
+      var agency = Agency(resultado.getString("nit"), resultado.getString("name"), resultado.getString("description"));
+      return Answer("OK", agency)
+    }
+    catch {
+      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
+      conexion.close()
+      // En caso de error, retornamos un mensaje al respecto
+      return Answer("Error", "body")
     }
   }
   
