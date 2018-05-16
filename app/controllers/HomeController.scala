@@ -23,18 +23,18 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
 
   // Metodo para recuperar los datos de la agencia
   def getAgencyInfoService = Action {    
-    val result = getAgencyInfoFunction()
+    var result = getAgencyInfoFunction()
 
     if (result.status.equals("OK")){
       // Y retornamos como un json los resultados (info de la agencia)
       Ok(Json.toJson(result.body))
     }else{
       // En caso de error, retornamos un mensaje al respecto
-      BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+      BadRequest(Json.toJson(result.body))
     }
   }
 
-  def getAgencyInfoFunction = {
+  def getAgencyInfoFunction() :Answer = {
     // Primero creamos una variable para realizar la conexion con la BD
     val conexion = db.getConnection()
     try {
@@ -43,18 +43,19 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       val resultado = query.executeQuery("SELECT * FROM Agency");
       resultado.next() // OJO!!! -> Esta instruccion es necesaria para poder ver/acceder correctamente al resultado
 
-      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
-      conexion.close()
-
       // Si todo salio bien, entonces creamos un objeto agencia
       var agency = Agency(resultado.getString("nit"), resultado.getString("name"), resultado.getString("description"));
-      return Answer("OK", agency)
+
+      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
+      conexion.close()
+      return Answer("OK", agency.toString())
     }
     catch {
       // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
-      conexion.close()
       // En caso de error, retornamos un mensaje al respecto
-      return Answer("Error", "body")
+      case e: Exception => 
+        conexion.close()
+        return Answer("Error", Json.obj("status" -> "Error", "message" -> "Hubo un error!").toString())
     }
   }
   
