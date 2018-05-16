@@ -41,5 +41,11 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       contentType(home) mustBe Some("text/html")
       contentAsString(home) must include ("Welcome to Play")
     }
+
+    "getAgencyInfoFunction from Unit" in {
+      val controller = new HomeController(stubControllerComponents())
+      val r = controller.getAgencyInfoFunction()
+      r.status mustBe "OK"
+    }
   }
 }

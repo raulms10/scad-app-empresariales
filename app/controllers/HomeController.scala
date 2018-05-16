@@ -21,10 +21,21 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
 {
 
   // Metodo para recuperar los datos de la agencia
-  def getAgencyInfo = Action {    
-    // Primero creamos una variable para realizar la conexion con la BD
-    val conexion = db.getConnection()
+  def getAgencyInfoService = Action {    
+    val result = getAgencyInfoFunction()
 
+    if (result.status.equals("OK")){
+      // Y retornamos como un json los resultados (info de la agencia)
+      Ok(Json.toJson(result.body))
+    }else{
+      // En caso de error, retornamos un mensaje al respecto
+      Throwable => BadRequest(result.body)
+    }
+  }
+
+  def getAgencyInfoFunction {
+|    // Primero creamos una variable para realizar la conexion con la BD
+    val conexion = db.getConnection()
     try {
       // Luego creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
       val query = conexion.createStatement
@@ -33,13 +44,11 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
 
       // Si todo salio bien, entonces creamos un objeto agencia
       var agency = Agency(resultado.getString("nit"), resultado.getString("name"), resultado.getString("description"))
-
-      // Y retornamos como un json los resultados (info de la agencia)
-      Ok(Json.toJson(agency))
+      return Request("OK", agency)
     }
     catch {
       // En caso de error, retornamos un mensaje al respecto
-      case _: Throwable => BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+      case _: return Request("Error", Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
     }
     finally {
       // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
