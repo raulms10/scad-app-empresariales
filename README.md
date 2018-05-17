@@ -120,4 +120,3 @@ Devuelve las casas registradas según los parámetros de entrada
 }
 ```
 
-
