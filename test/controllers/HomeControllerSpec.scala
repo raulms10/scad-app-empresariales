@@ -3,6 +3,7 @@ package controllers
 import org.scalatestplus.play._
 import org.scalatestplus.play.guice._
 import play.api.test._
+import models.Agency
 import play.api.test.Helpers._
 
 /**
@@ -27,9 +28,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
     "Test getAgencyInfoFunction from Unit" in {
       val controller = inject[HomeController]
       val r = controller.getAgencyInfoFunction()
-      println(r.body)
-      println(r.status)
-      r.status mustBe "OK"
+      r.get.toString mustBe "Agency(1234-4567-00048-6553,Arrendamientos SCAD,Agencia de arrendamientos para estudiantes de la Universidad de Antioquia.)"
     }
   }
 }

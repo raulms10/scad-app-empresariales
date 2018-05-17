@@ -9,7 +9,6 @@ import play.api.libs.json._
 import models.Agency
 import models.Booking
 import models.Home
-import models.Answer
 import play.api.db._ // Este es especialmente necesario para conectarse con la BD
 import org.joda.time.DateTime
 import org.joda.time.Days
@@ -21,20 +20,22 @@ import org.joda.time.Days
 class HomeController @Inject()(db: Database, cc: ControllerComponents) extends AbstractController(cc)
 {
 
+  //var agency:Agency = new Agency("","", "")
   // Metodo para recuperar los datos de la agencia
   def getAgencyInfoService = Action {    
     var result = getAgencyInfoFunction()
 
-    if (result.status.equals("OK")){
+
+    if (result == None){
       // Y retornamos como un json los resultados (info de la agencia)
-      Ok(Json.toJson(result.body))
+      BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
     }else{
       // En caso de error, retornamos un mensaje al respecto
-      BadRequest(Json.toJson(result.body))
+      Ok(Json.toJson(result.get))
     }
   }
 
-  def getAgencyInfoFunction() :Answer = {
+  def getAgencyInfoFunction() :Option[Agency] = {
     // Primero creamos una variable para realizar la conexion con la BD
     val conexion = db.getConnection()
     try {
@@ -48,14 +49,14 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
 
       // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
       conexion.close()
-      return Answer("OK", agency.toString())
+      return Some(agency)
     }
     catch {
       // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
       // En caso de error, retornamos un mensaje al respecto
       case e: Exception => 
         conexion.close()
-        return Answer("Error", Json.obj("status" -> "Error", "message" -> "Hubo un error!").toString())
+        return None
     }
   }
   
