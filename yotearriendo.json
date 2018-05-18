@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "yotearriendo-d532f",
+  "private_key_id": "c5467479a0fa0ab49c1712b9443583469bd7ce49",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCrXfh5ucbwiMD4\nSCWJzmUdiSJGI/2GpjQ6nyhLmMovPHZfOnmGBzEdrYk298q7o2VQeCBu8g1GZ/qA\nmdiDdfiN8+BmK/qfikPzYFPXFNw4VVKP8Ordi7ntFsWu/Z/86IzNu7brgg73veXT\nJgoh3e4bmB4PDWOaCsURQecCahl1PHHUS8CfGjhfyUb8qb4KACoLU8HxLkUrmZ1I\nPigDZJSGoHbHaLUPn0PVQqsHj+hv5YGpFa4NHVUmaOMq1XRsCYFm4B1/BJ2pRgIB\nZlno+AZLprVZYV7w81ZXTn5HCzgUvbMDZUj1YdOi6mFl1SdHcF+lzxXTb5s4PtL3\n8qnOvxIZAgMBAAECggEAC/ShJHrr0HW2AsxjxA7AerRJzhtuMWHwlGNsuAN3nZ6K\nAqBNgKaJTHECOPHGNNuUMq5C0wKznuUbsrOpCZjmJ58rWW15jX5jubvPdZq4t3xq\nZ2zvMdgw90PGtGvw6L/frO3K9/jJqwqWWWoWvGCjn0y4UiQEvidAsvDGWWKGFqns\n61MkAv8xv6NbNpnDAR/mfQ/93KROKe7mXfwYxhG0RbUuJTSgrxSveyQJg5ZL5co2\nz/YdjIeFNHnsIa1owpXo2TwDX7UXIh9rQ9nZgyr0ETKO9ehFy1OrKbizCRni3dfk\n/zJ8zkn/vRBLCGDkycxCcZR0k3wvhTu7TNuVpmEChQKBgQDU8XIWBJ9gp9alPqB/\n9tNvFCBwQTqdebXY5n/yfAd7UFJABRNfupjVLyAc7dGguFJ9DaHQFMgkKXji1t/H\nTngo9THNonsRiCUFmfU8FmnHdiHnQLexFgoTYs6jt71xV6cK1Hp3pq/wbTduatt7\n+qjGxRjeLl8AhB9p+A0SJR8SNQKBgQDOBG1HcAOSAacU6oHsRBZXjr0EPumoYaN5\nTkZHNljzOlbmi8F/gkW2HaiShE2A1gM3UwUIzukMM+0uhzAs21mjoWf0XI9vbDHG\ndOapOPL8dqou+Y+z1yl0X1Jq4pCzOi7zmLmhWbxev4CjBGK9KfqwP6Jm9almih26\nhBTgIS681QKBgQCiIc/2mcBrzH7uxDdaFym3GoD0V4X0ntXpdt8WVn8v0eE+I18z\n9RQmxUHTJPQGRjFwS6/Xies1NWp4dJhf3Qw6Sy6HXl4L5DgkAqwo+vvBRd3cgHcc\nWyaCyimBmAWixdVGtq8kaQLusYmSBcRlql1VMn6TtITbFL4CZj41gZQdvQKBgEiW\nULaR5gAkquz4r2xClSimdzyuuf8E3+dWx/ZBVNfmH0Y9yaCWkt9W1dVB3ljdjuaI\nTsbKuFv/U7tIEJZNdujrbsgvcK5Ojb8h4z+OfDatzMqeTZ6M2eNRzqUwTNGJV4+m\nqQkLqA4uJTHK0stZpiVBVoQ2XEhvs4fLD9vkdSY9AoGAA5NUTwgUa5NmB1DiMI1d\n3mBhj55aESkrA53mJHy0slvPYSh598IzAnrp5+QHQkht4lJhDw/fBmZD9o+Pu+XA\nqDPveId71u0Jtsq2r5Nt7d68Zka7awvOzj8ps7EsfRk6sV8B3jm7G4n981vH0B8D\nSc0jfRI7voKvEtEnbjwVZCY=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-anpv2@yotearriendo-d532f.iam.gserviceaccount.com",
+  "client_id": "104796509053951182520",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-anpv2%40yotearriendo-d532f.iam.gserviceaccount.com"
+}

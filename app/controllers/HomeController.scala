@@ -12,6 +12,12 @@ import models.Home
 import play.api.db._ // Este es especialmente necesario para conectarse con la BD
 import org.joda.time.DateTime
 import org.joda.time.Days
+import java.io.InputStream
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
+import com.google.firebase.database._
+import com.google.firebase.auth.FirebaseAuth
+import java.util.concurrent.ExecutionException
 
 
 // Controlador de la pagina web
@@ -19,6 +25,33 @@ import org.joda.time.Days
 @Singleton
 class HomeController @Inject()(db: Database, cc: ControllerComponents) extends AbstractController(cc)
 {
+
+  var idToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEyMDUwYzMxN2ExMjJlZDhlMWZlODdkN2FhZTdlMzk3OTBmNmMwYjQifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veW90ZWFycmllbmRvLWQ1MzJmIiwibmFtZSI6Imp1YW4gZGllZ28gZ29leiBkdXJhbmdvIiwicGljdHVyZSI6Imh0dHBzOi8vbGg2Lmdvb2dsZXVzZXJjb250ZW50LmNvbS8tU05xSHhUY244SG8vQUFBQUFBQUFBQUkvQUFBQUFBQUFFeEUvREhNdFo3RmpKTUEvcGhvdG8uanBnIiwiYXVkIjoieW90ZWFycmllbmRvLWQ1MzJmIiwiYXV0aF90aW1lIjoxNTI2NjY1NDQyLCJ1c2VyX2lkIjoibGw0VWFDSEVkVlFYTzlxcGlGTkgzZkRNQ1BjMiIsInN1YiI6ImxsNFVhQ0hFZFZRWE85cXBpRk5IM2ZETUNQYzIiLCJpYXQiOjE1MjY2NjU0NDIsImV4cCI6MTUyNjY2OTA0MiwiZW1haWwiOiJqZGllZ283MTE4QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7Imdvb2dsZS5jb20iOlsiMTE1NzA3MjU0ODU0MDIwNjk3ODA0Il0sImVtYWlsIjpbImpkaWVnbzcxMThAZ21haWwuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoiZ29vZ2xlLmNvbSJ9fQ.erQb0WVXgiLhu54p5zwS-CuARrkjKHwG7usPQglgDLvMWVVLJ6kWsF26BEuzmXqhBb3oPR_RDQ2J4mgsQ7bIlkjtRd02_AuuSRd5IfIB_PT3fybOjel0o7c9dKRFgsFm8dbga6Xi6zRRCT-VRqNvJTikNMo7sZqXOciKhZ0qHjixHRlM7y8xgj1zl7WwFu8xzOH9v_FvodId2TYOfAu79v2ypjK4kQGBnEQgP9kBjfhepEi7hKvsmBxDjzGPo9G2UxQZi1H2KYE0xXGr4qPPnn2JGuPmsTfqMEfNi-IGb94qyVSp73VEvtF712dIBBYIIciXnIwZr-X9hZtOLdFUyg"
+
+  def initializeFirebase(): Int = {
+    var credentials: InputStream = getClass.getResourceAsStream("/yotearriendo.json");
+    var result: Int = 0
+    var options = new FirebaseOptions.Builder()
+    .setServiceAccount(credentials)
+    .setDatabaseUrl("https://yotearriendo-d532f.firebaseio.com/")
+    .build();
+
+    FirebaseApp.initializeApp(options);
+
+    try {
+      // Verify the ID token while checking if the token is revoked by passing checkRevoked
+      // as true.
+      var checkRevoked = true;
+      var decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+      // Token is valid and not revoked.
+      var uid = decodedToken;
+      result = 1
+    } catch {
+      case e:Exception=>
+      result = 0
+    }
+    return result
+  }
 
   //var agency:Agency = new Agency("","", "")
   // Metodo para recuperar los datos de la agencia

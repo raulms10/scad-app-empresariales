@@ -30,5 +30,11 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val r = controller.getAgencyInfoFunction()
       r.get.toString mustBe "Agency(1234-4567-00048-6553,Arrendamientos SCAD,Agencia de arrendamientos para estudiantes de la Universidad de Antioquia.)"
     }
+
+    "Test initializeFirebase from Unit" in {
+      val controller = inject[HomeController]
+      val r = controller.initializeFirebase()
+      r mustBe 1
+    }
   }
 }
