@@ -12,6 +12,8 @@ import models.Home
 import play.api.db._ // Este es especialmente necesario para conectarse con la BD
 import org.joda.time.DateTime
 import org.joda.time.Days
+import java.util.Calendar
+import java.sql.Date
 
 
 // Controlador de la pagina web
@@ -59,7 +61,104 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
         return None
     }
   }
-  
+
+  //Método para consultar las reservas de un usuario (Service)
+  def getBookingService = Action {
+    var result = getAgencyInfoFunction()
+
+
+    if (result == None){
+      // Y retornamos como un json los resultados (info de la agencia)
+      BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+    }else{
+      // En caso de error, retornamos un mensaje al respecto
+      Ok(Json.toJson(result.get))
+    }
+  }
+
+  //Método para consultar las reservas de un usuario
+  def getBookingFunction() :Option[JsArray] = {
+    val conexion = db.getConnection()
+    try {
+      // Creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
+      val query = conexion.createStatement
+      //val resultado = query.executeQuery("SELECT * FROM Homes INNER JOIN Booking ON ...");
+      val resultado = query.executeQuery("SELECT * FROM Booking");
+      // Se crea un arreglo json vacio el cual se ira rellenando con jsons que tengan los datos de cada una de las casas con sus reservas
+      var arrayHomes = JsArray()
+      var jsonResponse = Json.obj()
+      while (resultado.next()){
+        /*var jsonAux = Json.obj("id" -> resultado2.getInt("id"),
+                               "name" -> resultado2.getString("name"),
+                               "description" -> resultado2.getString("description"),
+                               "location" -> Json.obj("address" -> resultado2.getString("address"), "latitude" -> resultado2.getString("latitude"), "longitude" -> resultado2.getString("longitude")),
+                               "city" -> resultado2.getString("city"),
+                               "type" -> resultado2.getString("type"),
+                               "rating" -> resultado2.getDouble("rating"),
+                               "totalAmount" -> (numDays.get)*resultado2.getDouble("pricePerNight"),
+                               "pricePerNight" -> resultado2.getDouble("pricePerNight"),
+                               "thumbnail" -> resultado2.getString("thumbnail")
+            */
+            var jsonAux = Json.obj("homeId" -> resultado.getInt("homeId"),
+                                   "checkIn" -> resultado.getString("checkIn"),
+                                   "checkOut" -> resultado.getString("checkOut"),
+                                   "idClient" -> resultado.getString("idClient"),
+                                   "bookingId" -> resultado.getInt("bookingId")
+                                 )
+
+            /*var jsonAux = Json.obj("bookingId" -> resultado.getInt("homeId"),
+                                   "checkIn" -> resultado.getDate("checkIn"),
+                                   "checkOut" -> resultado.getDate("checkOut"),
+                                   "idClient" -> resultado.getString("idClient"),
+                                   "idClient" -> resultado.getInt("bookingId")
+                                 )*/
+        arrayHomes = arrayHomes :+ jsonAux
+      }
+      
+      // Al terminar de rellenar el arreglo de inmuebles, dicho arreglo se adjunta al json de respuesta bajo la clave 'homes'
+      jsonResponse = jsonResponse + ("homes" -> arrayHomes)
+
+      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
+      conexion.close()
+      return Some(arrayHomes)
+    }
+    catch {
+      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
+      case e: Exception => 
+        conexion.close()
+        println(e)
+        return None
+    }
+  }
+
+  def getInsertFunction() :String = {
+    val conexion = db.getConnection()
+    try {
+      // Creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
+      val today = Calendar.getInstance().getTime()
+      val q:String = "INSERT INTO booking('homeId', 'checkIn', 'checkOut', 'idClient') VALUES(1, ?, ?, 'id-client-1')"
+      val query = conexion.prepareStatement(q)
+      //java.sql.Date sqlDate = new java.sql.Date(utilDate.getTime());
+      val f = new Date(today.getTime());
+      println(f)
+      query.setDate(1, f)
+      query.setDate(2, f)
+      //val resultado = query.executeQuery("SELECT * FROM Homes INNER JOIN Booking ON ...");
+      println("Qurey: " +q)
+      val resultado = query.executeUpdate();
+      // Se crea un arreglo json vacio el cual se ira rellenando con jsons que tengan los datos de cada una de las casas con sus reservas
+      conexion.close()
+      return "OK"
+    }
+    catch {
+      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
+      case e: Exception => 
+        conexion.close()
+        println(e)
+        return "NO"
+    }
+  }
+ 
   // Metodo para recuperar todos los inmuebles de la agencia
   def getAll = Action {
     // Primero, se crea una lista vacia para manejar los datos de los inmuebles que lleguen de la BD

@@ -28,7 +28,25 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
     "Test getAgencyInfoFunction from Unit" in {
       val controller = inject[HomeController]
       val r = controller.getAgencyInfoFunction()
+      if (r == None)
+        r mustBe ""  
       r.get.toString mustBe "Agency(1234-4567-00048-6553,Arrendamientos SCAD,Agencia de arrendamientos para estudiantes de la Universidad de Antioquia.)"
+
     }
+
+    "Test getBookingFunction from Unit" in {
+      val controller = inject[HomeController]
+      val r = controller.getBookingFunction()
+      if (r == None)
+        r mustBe ""
+      r.get.toString mustBe "{}"
+    }
+
+    "Test getInsertFunction from Unit" in {
+      val controller = inject[HomeController]
+      val r = controller.getInsertFunction()
+      r mustBe "OK"
+    }
+
   }
 }
