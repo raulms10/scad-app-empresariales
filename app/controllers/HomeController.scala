@@ -20,6 +20,7 @@ import org.joda.time.Days
 class HomeController @Inject()(db: Database, cc: ControllerComponents) extends AbstractController(cc)
 {
 
+
   //var agency:Agency = new Agency("","", "")
   // Metodo para recuperar los datos de la agencia
   def getAgencyInfoService = Action {    
@@ -59,8 +60,47 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
         return None
     }
   }
+
+  def removeBookingService = Action {
+    var result = removeBookingFunction()
+
+    if (result == None){
+      // Y retornamos como un json los resultados (info de la agencia)
+      BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+    }else{
+      // En caso de error, retornamos un mensaje al respecto
+      Ok(Json.toJson(result.get))
+    }
+  }
+
+  def removeBookingFunction() :Option[Agency] = {
+    // Primero creamos una variable para realizar la conexion con la BD
+    val conexion = db.getConnection()
+    try {
+      // Luego creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
+      val query = conexion.createStatement
+      val resultado = query.executeQuery("SELECT * FROM Agency");
+      resultado.next() // OJO!!! -> Esta instruccion es necesaria para poder ver/acceder correctamente al resultado
+
+      var jsonAux = Json.obj("name" -> resultado.getString("name"), "nit" -> resultado.getString("nit"))
+
+      println(jsonAux)
+
+      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
+      conexion.close()
+      return jsonAux
+    }
+    catch {
+      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
+      // En caso de error, retornamos un mensaje al respecto
+      case e: Exception => 
+        conexion.close()
+        return None
+    }
+  }
+
   
-  // Metodo para recuperar todos los inmuebles de la agencia
+  // Método para recuperar todos los inmuebles de la agencia
   def getAll = Action {
     // Primero, se crea una lista vacia para manejar los datos de los inmuebles que lleguen de la BD
     var arrayHomes = List[Home]()
@@ -92,6 +132,29 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       conexion.close()
     }
   }
+
+  // Método para cancelar las reservas hechas
+  def removeBooking(id: Int) = Action{
+    // Se crea una variable para realizar la conexión con la BD
+    val conexion = db.getConnection()
+
+    try{
+      // Se crear una variable para el query SQL de eliminación y se ejecuta
+      val query = conexion.createStatement
+      val resultado = query.executeUpdate("DELETE FROM Home WHERE id = " + id)
+    }catch {
+      // En caso de error, retornamos un mensaje al respecto
+      case _: Throwable => BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+    }
+    finally{
+      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
+      conexion.close()
+      return OK("Calidad")
+    }
+    Ok("Cancelacion con exito!!!")
+  }
+
+
   
   // Metodo para recuperar los inmuebles que concuerdan con los parametros de busqueda
   def search = Action {implicit request =>
