@@ -136,13 +136,14 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     try {
       // Creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
       val today = Calendar.getInstance().getTime()
-      val q:String = "INSERT INTO booking('homeId', 'checkIn', 'checkOut', 'idClient') VALUES(1, ?, ?, 'id-client-1')"
+      val q:String = "INSERT INTO booking VALUES(1, '2018-05-11', '2018-05-12', 'id-client-1', )"
       val query = conexion.prepareStatement(q)
       //java.sql.Date sqlDate = new java.sql.Date(utilDate.getTime());
       val f = new Date(today.getTime());
       println(f)
-      query.setDate(1, f)
-      query.setDate(2, f)
+      val jTime = new DateTime(2018, 5, 25, 0, 0)
+      //query.setDate(1, jTime)
+      //query.setDate(2, jTime)
       //val resultado = query.executeQuery("SELECT * FROM Homes INNER JOIN Booking ON ...");
       println("Qurey: " +q)
       val resultado = query.executeUpdate();
