@@ -18,8 +18,8 @@ import java.io.File
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.database._
+import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.tasks.Tasks
 import java.util.concurrent.ExecutionException
 
 
@@ -29,40 +29,34 @@ import java.util.concurrent.ExecutionException
 class HomeController @Inject()(db: Database, cc: ControllerComponents) extends AbstractController(cc)
 {
 
+  def setFireBaseConnection {
+    var fbApps = FirebaseApp.getApps()
+    
+    if (fbApps.isEmpty)
+    {
+      val serviceAccount = new FileInputStream("yotearriendo.json");
+      val options = new FirebaseOptions.Builder()
+      .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+      .setDatabaseUrl("https://yotearriendo-d532f.firebaseio.com/")
+      .build();
+      FirebaseApp.initializeApp(options);
+    }
+  }
+
   def verifyIdToken(idToken: String): Option[String] = {
-    val initialFile = new File("yotearriendo.json");
-    val credentials: InputStream = new FileInputStream(initialFile);
-    val options = new FirebaseOptions.Builder()
-    .setServiceAccount(credentials)
-    .setDatabaseUrl("https://yotearriendo-d532f.firebaseio.com/")
-    .build();
-    FirebaseApp.initializeApp(options);
+    setFireBaseConnection
 
     try {
-      var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
+      // Verify the ID token while checking if the token is revoked by passing checkRevoked
+      // as true.
+      var checkRevoked = true;
+      var decodedToken = FirebaseAuth.getInstance()
+          .verifyIdTokenAsync(idToken, checkRevoked).get();
       // Token is valid and not revoked.
       var uid = decodedToken.getUid();
-      var userLists = FirebaseDatabase.getInstance().getReference("users/" + uid);
-      // Find the two shortest dinosaurs.
-      //var ref = firebase.database().ref("dinosaurs");
-      var email = ""
-      userLists.addListenerForSingleValueEvent(new ValueEventListener(){
-        override def onDataChange(snapshot: DataSnapshot) = {
-          val userRecord = snapshot.getChildren()
-          if(userRecord == null){
-            email = "noo"
-          }
-          else{            
-            email =  userRecord.toString
-          }
-        }
-        override def onCancelled(databaseError: DatabaseError) = {
-          email = "no"
-        }
-      })
-      //var user = Tasks.await(FirebaseAuth.getInstance().getCurrentUser())
-      //var user = userLists[0]
-      return Some(email)      
+      var userRecord = FirebaseAuth.getInstance().getUserAsync(uid).get();
+      var email = userRecord.getEmail
+      return Some(email)   
     } catch {
       case e:Exception=>
       return None
