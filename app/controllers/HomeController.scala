@@ -48,56 +48,94 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       }
       else
       {
-        val arrivedDate = (cuerpoJson \ "checkIn").asOpt[String]
-        val departureDate = (cuerpoJson \ "checkOut").asOpt[String]
-        
-        if ((arrivedDate == None) || (departureDate == None))
+        if (request.headers.get("token") == None)
         {
-          BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fechas deben ser tipo String"))
+          BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "No hay ninguna clave token"))
         }
         else
         {
+          val authToken = request.headers.get("token").get
           
-          
-          
-          
-          
-          
-          
-          
-          try
+          if (!verifyIdToken(authToken))
           {
-            
-            
-            
-            
-            
-            
-            
-            Ok(Json.obj("agency" -> infoAgency.get, "codigo" -> SUCCESS, "mensaje" -> "Reserva con exito!!!"))
+            BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Token de usuario invalido"))
           }
-          catch
+          else
           {
-            case _: Throwable => BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
+            val client = getUID(authToken)
+            
+            val arrivedDate = (cuerpoJson \ "checkIn").asOpt[String]
+            val departureDate = (cuerpoJson \ "checkOut").asOpt[String]
+            
+            if ((arrivedDate == None) || (departureDate == None))
+            {
+              BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fechas deben ser tipo String"))
+            }
+            else
+            {
+              val idHome = (cuerpoJson \ "id").asOpt[Int]
+              
+              if (idHome == None)
+              {
+                BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "El ID del inmueble debe ser un numero"))
+              }
+              else
+              {
+                val conexion = db.getConnection()
+                val query = conexion.createStatement
+                
+                try
+                {
+                  val resultado1 = query.executeQuery(s"SELECT COUNT(*) as numHomes FROM Home WHERE id = ${idHome.get};")
+                  resultado1.next()
+                  
+                  if (resultado1.getInt("numHomes") == 0)
+                  {
+                    BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "El ID del inmueble no existe en la BD"))
+                  }
+                  else
+                  {
+                    
+                    
+                    //println("llego")
+                    //println(s"""INSERT INTO Booking VALUES (${idHome.get}, '2018-06-12', '2018-06-23', "${client}", NULL);""")
+                    val resultadoReserva = query.executeUpdate(s"""INSERT INTO Booking VALUES (${idHome.get}, '2018-06-12', '2018-06-23', "${client}", NULL);""")
+                    //println("paso")
+                    
+                    
+                    
+                    Ok(Json.obj("agency" -> infoAgency.get, "codigo" -> SUCCESS, "mensaje" -> "Reserva con exito!!!"))
+                  }
+                }
+                catch
+                {
+                  case _: Throwable => BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
+                }
+                finally
+                {
+                  conexion.close()
+                }
+              }
+            }
           }
-          finally
-          {
-            //conexion.close()
-          }
-        }
-      }      
+        } 
+      }
     }
   }
-
-  def verifyIdToken(idToken: String): Boolean = {
+  
+  @Singleton
+  def setFireBaseConnection {
     val initialFile = new File("yotearriendo.json");
     val credentials: InputStream = new FileInputStream(initialFile);
     val options = new FirebaseOptions.Builder()
     .setServiceAccount(credentials)
     .setDatabaseUrl("https://yotearriendo-d532f.firebaseio.com/")
     .build();
+    
     FirebaseApp.initializeApp(options);
+  }
 
+  def verifyIdToken(idToken: String): Boolean = {
     try {
       var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
       // Token is valid and not revoked.
@@ -106,6 +144,17 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     } catch {
       case e:Exception=>
       return false
+    }
+  }
+  
+  def getUID(idToken: String): String = {
+    try {
+      var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
+      return decodedToken.getUid();
+    }
+    catch {
+      case e:Exception=>
+      return "ERROR!"
     }
   }
 
