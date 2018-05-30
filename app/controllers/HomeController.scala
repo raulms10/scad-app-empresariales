@@ -28,6 +28,66 @@ import java.util.concurrent.ExecutionException
 @Singleton
 class HomeController @Inject()(db: Database, cc: ControllerComponents) extends AbstractController(cc)
 {
+  val ERROR = 0
+  val SUCCESS = 1
+  
+  def booking = Action {implicit request =>
+    var infoAgency = getAgencyInfoFunction()
+    
+    if (request.body.asJson == None) {
+      BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Request vacio!!!"))
+    }
+    else
+    {
+      val cuerpoJson = request.body.asJson.get
+      val llaves = cuerpoJson.as[JsObject].keys
+      
+      if (!llaves.contains("checkIn") || !llaves.contains("checkOut") || !llaves.contains("id"))
+      {
+        BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Request no tiene todos los parametros indicados"))
+      }
+      else
+      {
+        val arrivedDate = (cuerpoJson \ "checkIn").asOpt[String]
+        val departureDate = (cuerpoJson \ "checkOut").asOpt[String]
+        
+        if ((arrivedDate == None) || (departureDate == None))
+        {
+          BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fechas deben ser tipo String"))
+        }
+        else
+        {
+          
+          
+          
+          
+          
+          
+          
+          
+          try
+          {
+            
+            
+            
+            
+            
+            
+            
+            Ok(Json.obj("agency" -> infoAgency.get, "codigo" -> SUCCESS, "mensaje" -> "Reserva con exito!!!"))
+          }
+          catch
+          {
+            case _: Throwable => BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
+          }
+          finally
+          {
+            //conexion.close()
+          }
+        }
+      }      
+    }
+  }
 
   def verifyIdToken(idToken: String): Boolean = {
     val initialFile = new File("yotearriendo.json");
