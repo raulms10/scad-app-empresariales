@@ -64,7 +64,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
 
   //Método para consultar las reservas de un usuario (Service)
   def getBookingService = Action {
-    var result = getAgencyInfoFunction()
+    var result = getBookingFunction()
 
 
     if (result == None){
@@ -77,50 +77,75 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   }
 
   //Método para consultar las reservas de un usuario
-  def getBookingFunction() :Option[JsArray] = {
+  def getBookingFunction() :Option[JsObject] = {
     val conexion = db.getConnection()
     try {
-      // Creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
-      val query = conexion.createStatement
-      //val resultado = query.executeQuery("SELECT * FROM Homes INNER JOIN Booking ON ...");
-      val resultado = query.executeQuery("SELECT * FROM Booking");
+      //Creamos la consulta SQL
+      val q:String = "SELECT * FROM Home h INNER JOIN Booking b ON h.id=b.homeId WHERE b.idClient=? ORDER BY h.id"
+      // Creamos una variable en donde formularemos nuestra query SQL de busqueda
+      val query = conexion.prepareStatement(q)
+      //Ingresamos el paramtro del cliente
+      query.setString(1, "id-client-1")
+      println("Qurey: " +q)
+      val result = query.executeQuery();
       // Se crea un arreglo json vacio el cual se ira rellenando con jsons que tengan los datos de cada una de las casas con sus reservas
       var arrayHomes = JsArray()
+      var arrayBooking = JsArray()
       var jsonResponse = Json.obj()
-      while (resultado.next()){
-        /*var jsonAux = Json.obj("id" -> resultado2.getInt("id"),
-                               "name" -> resultado2.getString("name"),
-                               "description" -> resultado2.getString("description"),
-                               "location" -> Json.obj("address" -> resultado2.getString("address"), "latitude" -> resultado2.getString("latitude"), "longitude" -> resultado2.getString("longitude")),
-                               "city" -> resultado2.getString("city"),
-                               "type" -> resultado2.getString("type"),
-                               "rating" -> resultado2.getDouble("rating"),
-                               "totalAmount" -> (numDays.get)*resultado2.getDouble("pricePerNight"),
-                               "pricePerNight" -> resultado2.getDouble("pricePerNight"),
-                               "thumbnail" -> resultado2.getString("thumbnail")
-            */
-            var jsonAux = Json.obj("homeId" -> resultado.getInt("homeId"),
-                                   "checkIn" -> resultado.getString("checkIn"),
-                                   "checkOut" -> resultado.getString("checkOut"),
-                                   "idClient" -> resultado.getString("idClient"),
-                                   "bookingId" -> resultado.getInt("bookingId")
+      var idHome = 0
+      var idHomeAnt = 0
+      var jsonAuxHome = Json.obj()
+      var jsonAuxBooking = Json.obj()
+      var jsonLocation = Json.obj()
+      while (result.next()){
+          idHome = result.getInt("homeId");
+          println("Id_Home: " + idHome + " Ant: " + idHomeAnt)
+          if (idHome != idHomeAnt){
+            idHomeAnt = idHome
+            jsonAuxHome = jsonAuxHome + ("booking" -> arrayBooking)
+            arrayHomes = arrayHomes :+ jsonAuxHome
+            jsonLocation = Json.obj("address"-> result.getString("address"),
+                                    "latitude"-> result.getString("latitude"),
+                                    "longitude"-> result.getString("longitude")
+                                   )
+            jsonAuxHome =Json.obj("id" -> result.getInt("id") ,
+                                  "name"-> result.getString("name"),
+                                  "description"-> result.getString("description"),
+                                  "location" -> jsonLocation,
+                                  "city" -> result.getString("city"),
+                                  "type"-> result.getInt("type"),
+                                  "rating"-> result.getDouble("rating"),
+                                  "totalAmount"-> 1233,
+                                  "pricePerNight"-> result.getDouble("pricePerNight"),
+                                  "thumbnail" -> result.getString("thumbnail")
+                                )
+            arrayBooking = JsArray()
+          }
+          jsonAuxBooking = Json.obj("checkIn" -> result.getString("checkIn"),
+                                   "checkOut" -> result.getString("checkOut"),
+                                   "bookingId" -> result.getInt("bookingId")
                                  )
-
-            /*var jsonAux = Json.obj("bookingId" -> resultado.getInt("homeId"),
-                                   "checkIn" -> resultado.getDate("checkIn"),
-                                   "checkOut" -> resultado.getDate("checkOut"),
-                                   "idClient" -> resultado.getString("idClient"),
-                                   "idClient" -> resultado.getInt("bookingId")
-                                 )*/
-        arrayHomes = arrayHomes :+ jsonAux
+          arrayBooking = arrayBooking :+ jsonAuxBooking
       }
       
+      jsonAuxHome = jsonAuxHome + ("booking" -> arrayBooking)
+      arrayHomes = arrayHomes :+ jsonAuxHome
+
+      val res = getAgencyInfoFunction()
+
+
+      if (res == None){
+        jsonResponse = jsonResponse + ("agency" -> Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+      }else{      
+        jsonResponse = jsonResponse + ("agency" ->  Json.toJson(res.get))
+      }
+
       // Al terminar de rellenar el arreglo de inmuebles, dicho arreglo se adjunta al json de respuesta bajo la clave 'homes'
       jsonResponse = jsonResponse + ("homes" -> arrayHomes)
 
       // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
       conexion.close()
-      return Some(arrayHomes)
+      return Some(jsonResponse)
     }
     catch {
       // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
@@ -136,7 +161,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     try {
       // Creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
       val today = Calendar.getInstance().getTime()
-      val q:String = "INSERT INTO booking VALUES(1, '2018-05-11', '2018-05-12', 'id-client-1', )"
+      val q:String = "INSERT INTO booking VALUES(2, '2018-05-18', '2018-05-20', 'id-client-1', 7)"
       val query = conexion.prepareStatement(q)
       //java.sql.Date sqlDate = new java.sql.Date(utilDate.getTime());
       val f = new Date(today.getTime());
