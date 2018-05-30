@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutionException
 class HomeController @Inject()(db: Database, cc: ControllerComponents) extends AbstractController(cc)
 {
 
-  def verifyIdToken(idToken: String): Boolean = {
+  def verifyIdToken(idToken: String): Option[String] = {
     val initialFile = new File("yotearriendo.json");
     val credentials: InputStream = new FileInputStream(initialFile);
     val options = new FirebaseOptions.Builder()
@@ -42,10 +42,30 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
       // Token is valid and not revoked.
       var uid = decodedToken.getUid();
-      return true      
+      var userLists = FirebaseDatabase.getInstance().getReference("users/" + uid);
+      // Find the two shortest dinosaurs.
+      //var ref = firebase.database().ref("dinosaurs");
+      var email = ""
+      userLists.addListenerForSingleValueEvent(new ValueEventListener(){
+        override def onDataChange(snapshot: DataSnapshot) = {
+          val userRecord = snapshot.getChildren()
+          if(userRecord == null){
+            email = "noo"
+          }
+          else{            
+            email =  userRecord.toString
+          }
+        }
+        override def onCancelled(databaseError: DatabaseError) = {
+          email = "no"
+        }
+      })
+      //var user = Tasks.await(FirebaseAuth.getInstance().getCurrentUser())
+      //var user = userLists[0]
+      return Some(email)      
     } catch {
       case e:Exception=>
-      return false
+      return None
     }
   }
 
