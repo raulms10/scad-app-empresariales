@@ -50,7 +50,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       {
         if (request.headers.get("token") == None)
         {
-          BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "No hay ninguna clave token"))
+          BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "No hay ninguna clave token en el encabezado"))
         }
         else
         {
@@ -95,16 +95,41 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                   }
                   else
                   {
-                    
-                    
-                    //println("llego")
-                    //println(s"""INSERT INTO Booking VALUES (${idHome.get}, '2018-06-12', '2018-06-23', "${client}", NULL);""")
-                    val resultadoReserva = query.executeUpdate(s"""INSERT INTO Booking VALUES (${idHome.get}, '2018-06-12', '2018-06-23', "${client}", NULL);""")
-                    //println("paso")
-                    
-                    
-                    
-                    Ok(Json.obj("agency" -> infoAgency.get, "codigo" -> SUCCESS, "mensaje" -> "Reserva con exito!!!"))
+                    val numDays = countDays(arrivedDate.get, departureDate.get)
+
+                    if (numDays == None)
+                    {
+                      BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
+                    }
+                    else if (numDays.get < 0)
+                    {
+                      BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
+                    }
+                    else if (numDays.get == 0)
+                    {
+                      BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "La reserva debe ser de por lo menos de un dia!"))
+                    }
+                    else
+                    {
+                      
+                      
+                      
+                      //println("llego")
+                      //println(s"""INSERT INTO Booking VALUES (${idHome.get}, '2018-06-12', '2018-06-23', "${client}", NULL);""")
+                      //val resultadoReserva = query.executeUpdate(s"""INSERT INTO Booking VALUES (${idHome.get}, '2018-06-12', '2018-06-23', "${client}", NULL);""")
+                      //println("paso")
+                      
+                      
+                      
+                      
+                      
+                      
+                      Ok(Json.obj("agency" -> infoAgency.get, "codigo" -> SUCCESS, "mensaje" -> "Reserva con exito!!!"))
+                      
+                      
+                      
+                      
+                    }
                   }
                 }
                 catch
@@ -123,20 +148,26 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     }
   }
   
-  @Singleton
   def setFireBaseConnection {
-    val initialFile = new File("yotearriendo.json");
-    val credentials: InputStream = new FileInputStream(initialFile);
-    val options = new FirebaseOptions.Builder()
-    .setServiceAccount(credentials)
-    .setDatabaseUrl("https://yotearriendo-d532f.firebaseio.com/")
-    .build();
+    var fbApps = FirebaseApp.getApps()
     
-    FirebaseApp.initializeApp(options);
+    if (fbApps.isEmpty)
+    {
+      val initialFile = new File("yotearriendo.json");
+      val credentials: InputStream = new FileInputStream(initialFile);
+      val options = new FirebaseOptions.Builder()
+      .setServiceAccount(credentials)
+      .setDatabaseUrl("https://yotearriendo-d532f.firebaseio.com/")
+      .build();
+      
+      FirebaseApp.initializeApp(options);
+    }
   }
 
   def verifyIdToken(idToken: String): Boolean = {
     try {
+      setFireBaseConnection
+      
       var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
       // Token is valid and not revoked.
       var uid = decodedToken.getUid();
@@ -149,6 +180,8 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   
   def getUID(idToken: String): String = {
     try {
+      setFireBaseConnection
+      
       var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
       return decodedToken.getUid();
     }
