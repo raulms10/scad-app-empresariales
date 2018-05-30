@@ -61,42 +61,56 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     }
   }
 
-  def removeBookingService = Action {
-    var result = removeBookingFunction()
+  def removeBookingService = Action { implicit request =>
+    val headAsJson = request.body.asJson.get
 
-    if (result == None){
+    val idBooking = (headAsJson \ "bookingId").asOpt[String]
+
+
+    var result = removeBookingFunction(idBooking.get)
+    var agency = getAgencyInfoFunction().get
+
+    if (result.get == "0"){
       // Y retornamos como un json los resultados (info de la agencia)
-      BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+      BadRequest(Json.obj("codigo" -> "0", "mensaje" -> "Cancelacion sin exito!!!"))
     }else{
       // En caso de error, retornamos un mensaje al respecto
-      Ok(Json.toJson(result.get))
+      var responseJson = Json.obj("agency" -> Json.obj(
+                                    "name" -> agency.name,
+                                    "nit" -> agency.nit),                                   
+                                  "codigo" -> "1",
+                                  "mensaje" -> "Cancelacion con exito!!!")
+      Ok(responseJson)
     }
   }
 
-  def removeBookingFunction() :Option[Agency] = {
-    // Primero creamos una variable para realizar la conexion con la BD
+
+    // Método para cancelar las reservas hechas
+  def removeBookingFunction(id: String) :Option[String]={
+    // Se crea una variable para realizar la conexión con la BD
     val conexion = db.getConnection()
-    try {
-      // Luego creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
+    var result = Some ("0")
+
+    try{
+      // Se crear una variable para el query SQL de eliminación y se ejecuta
       val query = conexion.createStatement
-      val resultado = query.executeQuery("SELECT * FROM Agency");
-      resultado.next() // OJO!!! -> Esta instruccion es necesaria para poder ver/acceder correctamente al resultado
+      val resultado = query.executeUpdate("DELETE FROM booking WHERE bookingId = " + id)
 
-      var jsonAux = Json.obj("name" -> resultado.getString("name"), "nit" -> resultado.getString("nit"))
+      // En caso de error, retornamos uno (1)
+      result = Some (resultado.toString)
 
-      println(jsonAux)
+    }catch {
 
-      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
-      conexion.close()
-      return jsonAux
-    }
-    catch {
-      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
-      // En caso de error, retornamos un mensaje al respecto
-      case e: Exception => 
-        conexion.close()
-        return None
-    }
+      case e: Exception=>
+      // En caso de error, retornamos cero (0)
+      result = Some ("0")
+    }finally{
+    // Antes de terminar, cerramos la conexión a la BD
+    conexion.close()
+  }
+
+  return result
+
   }
 
   
@@ -132,28 +146,6 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       conexion.close()
     }
   }
-
-  // Método para cancelar las reservas hechas
-  def removeBooking(id: Int) = Action{
-    // Se crea una variable para realizar la conexión con la BD
-    val conexion = db.getConnection()
-
-    try{
-      // Se crear una variable para el query SQL de eliminación y se ejecuta
-      val query = conexion.createStatement
-      val resultado = query.executeUpdate("DELETE FROM Home WHERE id = " + id)
-    }catch {
-      // En caso de error, retornamos un mensaje al respecto
-      case _: Throwable => BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
-    }
-    finally{
-      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
-      conexion.close()
-      return OK("Calidad")
-    }
-    Ok("Cancelacion con exito!!!")
-  }
-
 
   
   // Metodo para recuperar los inmuebles que concuerdan con los parametros de busqueda
