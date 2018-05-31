@@ -13,4 +13,4 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 GET     /v1/agency/info        controllers.HomeController.getAgencyInfoService
 GET     /v1/homes/all          controllers.HomeController.getAllService
 POST    /v1/homes/search       controllers.HomeController.searchService
-POST    /v1/homes/booking      controllers.HomeController.booking
+POST    /v1/homes/booking      controllers.HomeController.bookingService

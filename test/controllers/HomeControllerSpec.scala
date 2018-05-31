@@ -10,8 +10,8 @@ import play.api.libs.json._
 
 // Clase para ejecutar las pruebas del backend YoTeArriendo de scala
 class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting {
-
-  " ------ Pruebas para las funciones del realase # 1 ------" should {
+  
+  /*" ------ Pruebas para las funciones del realase # 1 ------" should {
     
     "Prueba inicial para revisar si el index esta funcionando" in {
       val controller = inject[HomeController]
@@ -207,9 +207,15 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
     
     
   }
+  */
   
-  /*
   " ------ Pruebas para las funciones del realase # 2 ------" should {
+    
+    "Prueba para revisar que se establece conexion con Firebase" in {
+      val controller = inject[HomeController]
+      val r = controller.setFireBaseConnection
+      r mustBe true
+    }
     
     "Prueba para revisar que el validador de tokens esta funcionando" in {
       val controller = inject[HomeController]
@@ -217,10 +223,18 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       r mustBe false
     }
     
+    "Prueba para revisar el metodo getUID si este trabajando" in {
+      val controller = inject[HomeController]
+      val r = controller.getUID("123456")
+      r mustBe "ERROR!"
+    }
+    
     
     
     
   }
+  
+  /*
   
   " --------- Pruebas para las funciones de apoyo ----------" should {
     
@@ -315,6 +329,5 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       r mustBe false
     }
     
-  }
-  */
+  }*/
 }

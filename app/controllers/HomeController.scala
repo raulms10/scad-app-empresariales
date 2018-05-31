@@ -32,148 +32,218 @@ import java.util.concurrent.ExecutionException
 @Singleton
 class HomeController @Inject()(db: Database, cc: ControllerComponents) extends AbstractController(cc)
 {
+  // CONSTANTES
   val ERROR = 0
   val SUCCESS = 1
   
-  def booking = Action {implicit request =>
+  // Metodo para exponer el servicio de reservas
+  def bookingService = Action {implicit request =>
+    // En primer lugar, invocamos la funcion propia de booking y le pasamos tanto el cuerpo del mensaje (este debe ser del tipo Option[JsValue]) como el token de autenticacion (Este ultimo debe ser del tipo Option[String])
+    var result = bookingFunction(request.body.asJson, request.headers.get("token"))
+    
+    // Una vez que se obtenga el resultado de booking
+    // Si el resultado es None es porque sucedio algo inesperado
+    if (result == None)
+    {
+      // Y por tanto, retornamos un mensaje al respecto
+      BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+    }
+    else // Sino
+    {
+      // Entonces, simplemente retornamos la respuesta que se obtuvo de la funcion booking
+      Ok(result.get)
+      
+      // NOTA: Si pasa algun otro tipo de error dentro de booking PERO ESTE NO FUE REPENTINO entonces se retorna tal mensaje
+    }
+  }
+  
+  // Metodo que realiza la logica (el trabajo) de las reservas
+  def bookingFunction(request: Option[JsValue], token: Option[String]) : Option[JsValue] = {
+    // Primero, recupero la informacion de la agencia
     var infoAgency = getAgencyInfoFunction()
     
-    if (request.body.asJson == None) {
-      BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Request vacio!!!"))
+    // Luego, si no se envio nada por el cuerpo de la peticion entonces
+    if (request == None) {
+      // Se retorna un mensaje de que el json request estaba vacio
+      return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Request vacio!!!"))
     }
-    else
+    else // En caso que si haya llegado un json con "algo" entonces
     {
-      val cuerpoJson = request.body.asJson.get
-      val llaves = cuerpoJson.as[JsObject].keys
+      val cuerpoJson = request.get // Recupero el json que llego
+      val llaves = cuerpoJson.as[JsObject].keys // Sacamos la lista de claves (keys) de dicho json en un Set (Conjunto)
       
+      // Y revisamos que si esten las 3 claves necesarias para realizar la reserva
+      // Por lo tanto, si NO estan todas las claves entonces
       if (!llaves.contains("checkIn") || !llaves.contains("checkOut") || !llaves.contains("id"))
       {
-        BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Request no tiene todos los parametros indicados"))
+        // Abortamos y retornamos un json que indica que faltan parametros
+        return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Request no tiene todos los parametros indicados"))
       }
-      else
+      else // En caso que si esten los parametros entonces
       {
-        if (request.headers.get("token") == None)
+        // Pasamos a revisar que si tengamos un token de autenticacion
+        // Si el token es nulo entonces
+        if (token == None)
         {
-          BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "No hay ninguna clave token en el encabezado"))
+          // Abortamos y retornamos un json indicando que no se envio ningun token por el encabezado
+          return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "No hay ninguna clave token en el encabezado"))
         }
-        else
+        else // Si el token no es nulo entonces
         {
-          val authToken = request.headers.get("token").get
+          // Almacenamos su valor en una variable String
+          val authToken = token.get
           
+          // Si el token enviado ha sido revocado o no es valido entonces
           if (!verifyIdToken(authToken))
           {
-            BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Token de usuario invalido"))
+            // Abortamos y retornamos un mensaje de que el token no es valido
+            return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Token de usuario invalido"))
           }
-          else
+          else // En caso que el token si sea valido entonces
           {
+            // Recuperamos el UID del token (identificador unico del usuario y que usaremos para las reservas)
             val client = getUID(authToken)
             
+            // Tambien, intentamos recuperar las fechas con sus claves correspondientes y las formateamos (casteamos) como Strings
+            // Nota: El metodo 'asOpt' trata de parsear el valor a recuperar con el tipo indicado,
+            //       Si el tipo coincide con el tipo del valor entonces se retorna Option[Tipo] donde para conseguir el valor propiamente se debe usar .get
+            //       En caso que los tipos no coincidan entonces se retorna None
             val arrivedDate = (cuerpoJson \ "checkIn").asOpt[String]
             val departureDate = (cuerpoJson \ "checkOut").asOpt[String]
             
+            // Ahora, si hay problemas con los tipos de las fechas entonces
             if ((arrivedDate == None) || (departureDate == None))
             {
-              BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fechas deben ser tipo String"))
+              // Se aborta y en un json se dice que las fechas deben ser hileras
+              return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fechas deben ser tipo String"))
             }
-            else
+            else // Si las fechas tienen el tipo correcto entonces
             {
+              // Intento recuperar el id del inmueble que el usuario quiere reservar
               val idHome = (cuerpoJson \ "id").asOpt[Int]
               
+              // Si tengo problemas en recuperar tal ID entonces
               if (idHome == None)
               {
-                BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "El ID del inmueble debe ser un numero"))
+                // Aborto y retorno un json indicando que el ID del inmueble debe ser un numero entero
+                return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "El ID del inmueble debe ser un numero"))
               }
-              else
+              else // Si el id del inmueble tiene el tipo correcto entonces
               {
+                // Se crea una variable para realizar la conexion con la BD y se crea una variable para formular queries SQL
                 val conexion = db.getConnection()
                 val query = conexion.createStatement
                 
                 try
                 {
+                  // Luego, busco el inmueble con el id especificado
                   val resultado1 = query.executeQuery(s"SELECT COUNT(*) as numHomes FROM Home WHERE id = ${idHome.get};")
                   resultado1.next()
                   
+                  // Si la busqueda no arrojo ningun resultado entonces
                   if (resultado1.getInt("numHomes") == 0)
                   {
-                    BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "El ID del inmueble no existe en la BD"))
+                    // Aborto y retorno un json que indica que no hay ningun inmueble con el id especificado
+                    return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "El ID del inmueble no existe en la BD"))
                   }
-                  else
+                  else // En caso que si exista el inmueble
                   {
+                    // Calculo/obtengo el numero de dias de la reserva
                     val numDays = countDays(arrivedDate.get, departureDate.get)
-
+                    
+                    // De modo que, si se presento un error con el calculo de fechas (se debe obtener 'None') entonces
                     if (numDays == None)
                     {
-                      BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
+                      // Se aborta y en un json se dice que las fechas no estan bien escritas
+                      return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
                     }
-                    else if (numDays.get < 0)
+                    else if (numDays.get < 0) // Por otro lado, si se obtiene que la diferencia es negativa entonces
                     {
-                      BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
+                      // Tambien aborto ya que eso significa que las fechas no tienen el orden correcto
+                      return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
                     }
-                    else if (numDays.get == 0)
+                    else if (numDays.get == 0) // O si la diferencia es cero entonces
                     {
-                      BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "La reserva debe ser de por lo menos de un dia!"))
+                      // Igualmente aborto porque el hospedaje minimo es de un dia
+                      return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "La reserva debe ser de por lo menos de un dia!"))
                     }
-                    else
+                    else // Ahora, si el calculo de los dias fue correcto entonces
                     {
+                      // Recupero todas las reservas asociadas al inmueble deseado
                       // Nota: No se si es por la zona horaria del servidor que aloja la BD o si es por alguna otra configuracion, pero si ejecuto
-                      //       la siguiente instruccion los registro que recupero tienen por una extraña razon las fechas con un dia de adelanto...
+                      //       la siguiente instruccion, los registros que recupero tienen por una extraña razon las fechas con un dia de adelanto...
                       //       Simplemente MUY RARO... por eso ejecuto la otra instruccion en donde a cada fecha le RESTO un DIA
                       //val resultado2 = query.executeQuery(s"SElECT * FROM Booking WHERE homeId = ${idHome.get};")
                       val resultado2 = query.executeQuery(s"SElECT homeId, DATE_ADD(checkIn, INTERVAL -1 DAY) AS checkIn, DATE_ADD(checkOut, INTERVAL -1 DAY) AS checkOut, idClient, bookingId FROM Booking WHERE homeId = ${idHome.get};")
                       
+                      // Posteriormente, creo las dos siguientes variables auxiliares
+                      // Estas me permitiran cambiar el orden de las fechas para ajustarme a los formatos de Jodatime y de MySQL
                       val formateadorDMY = new SimpleDateFormat("d-M-y")
                       val formateadorYMD = new SimpleDateFormat("y-M-d")
                       
+                      // Tambien creo las siguientes variables, las cuales se usaran para iterar por las fechas de las reservas asociadas al inmueble
                       var auxArrivedDate = ""
                       var auxDepartureDate = ""
+                      
+                      // Y creo una variable centinela que me indicara si hay solapamiento de intervalos de fechas
                       var fechasSolapadas = false
                       
+                      // Ahora, mientras haya reservas asociadas al inmueble Y no se solape ningun intervalo haga
                       while (resultado2.next() && !fechasSolapadas)
                       {
+                        // Tomo las fechas de la reserva ya existente (formateandolas como necesita JodaTime)
                         auxArrivedDate = formateadorDMY.format(resultado2.getDate("checkIn"))
                         auxDepartureDate = formateadorDMY.format(resultado2.getDate("checkOut"))
                         
                         // Nota: No prestarle atencion a estas instrucciones
                         //       Estas me ayudaron a encontrar el detallito de las fechas desfasadas
-                        //println(auxArrivedDate)
-                        //println(auxDepartureDate)
-                        //println("---------")
+                        /*println(auxArrivedDate)
+                        println(auxDepartureDate)
+                        println("---------")*/
                         
+                        // Y se invoca el metodo dateRangesOverlap para determinar si se solapa la fecha de la reserva que se quiere hacer con alguna reserva ya hecha
                         fechasSolapadas = dateRangesOverlap(arrivedDate.get, departureDate.get, auxArrivedDate, auxDepartureDate)
                       }
                       
+                      // Si las fechas de la reserva que se quiere hacer se solapan con alguna otra reserva entonces
                       if (fechasSolapadas)
                       {
-                        BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> s"Reserva invalida por fechas solapadas! El inmueble esta ocupado del ${auxArrivedDate} al ${auxDepartureDate}"))
+                        // Aborto y retorno un mensaje de que no se puede hacer la reserva por solapamiento (Ademas digo cuales son las fecha problema)
+                        return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> s"Reserva invalida por fechas solapadas! El inmueble esta ocupado del ${auxArrivedDate} al ${auxDepartureDate}"))
                       }
-                      else
+                      else // Si no hay solapamiento entonces
                       {
+                        // Se cambia el formato (orden) de las fechas de la reserva a hacer
                         val checkIn = formateadorYMD.format(formateadorDMY.parse(arrivedDate.get))
                         val checkOut = formateadorYMD.format(formateadorDMY.parse(departureDate.get))
                         
                         // Nota: No prestarle atencion a estas instrucciones
                         //       Estas me ayudaron a encontrar el detallito de las fechas desfasadas
-                        //println(checkIn)
-                        //println(checkOut)
+                        /*println(checkIn)
+                        println(checkOut)*/
                         
+                        // Y se ejecuta la instruccion de reserva (inserccion)
                         // Nota: VUELVE y JUEGA...
                         //       Esta vez cuando inserto el registro, las fechas me les RESTA UN DIA...
                         //       Entonces, en la segunda instruccion TOCA SUMARLE UN DIA para compensar el desfase
                         //val resultadoReserva = query.executeUpdate(s"""INSERT INTO Booking VALUES (${idHome.get}, '${checkIn}', '${checkOut}', "${client}", NULL);""")
                         val resultadoReserva = query.executeUpdate(s"""INSERT INTO Booking VALUES (${idHome.get}, '${checkIn}'+INTERVAL 1 DAY, '${checkOut}'+INTERVAL 1 DAY, "${client}", NULL);""")
                         
-                        Ok(Json.obj("agency" -> infoAgency.get, "codigo" -> SUCCESS, "mensaje" -> "Reserva con exito!!!"))
+                        // Antes de terminar, cierro la conexion con la BD
+                        conexion.close()
+                        
+                        // Y retorno el mensaje de exito en la operacion de reserva
+                        return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> SUCCESS, "mensaje" -> "Reserva con exito!!!"))
                       }
                     }
                   }
                 }
                 catch
                 {
-                  case _: Throwable => BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
-                }
-                finally
-                {
-                  conexion.close()
+                  // En caso de error, retornamos un mensaje al respecto
+                  case _: Throwable =>
+                    conexion.close() // Antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
+                    return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
                 }
               }
             }
@@ -183,11 +253,15 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     }
   }
   
-  def setFireBaseConnection {
+  // Metodo para instanciar la conexion con Firebase
+  def setFireBaseConnection :Boolean = {
+    // En primer lugar, revisamos que instancias de Firebase hay vigentes
     var fbApps = FirebaseApp.getApps()
     
+    // Si no hay ninguna instancia de conexion vigente entonces
     if (fbApps.isEmpty)
     {
+      // Establecemos los parametros que necesitamos para conectarnos a FireBase
       val initialFile = new File("yotearriendo.json");
       val credentials: InputStream = new FileInputStream(initialFile);
       val options = new FirebaseOptions.Builder()
@@ -195,32 +269,50 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       .setDatabaseUrl("https://yotearriendo-d532f.firebaseio.com/")
       .build();
       
+      // E intentamos inicializar la conexión con Firebase
       FirebaseApp.initializeApp(options);
     }
+    
+    // Finalmente, retornamos verdadero si en verdad se logro la comunicacion con Firebase o falso en caso contrario
+    if (!FirebaseApp.getApps().isEmpty) {
+      return true
+    } else {
+      return false
+    }
   }
-
+  
+  // Metodo para revisar que un token de Firebase es valido
   def verifyIdToken(idToken: String): Boolean = {
-    try {
+    try
+    {
+      // En primer lugar, invocamos el metodo de conexion a Firebase
       setFireBaseConnection
       
+      // Luego, tratamos de decodificar el token de modo que si puedo recuperar despues el UID entonces retorno verdadero
       var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
-      // Token is valid and not revoked.
-      var uid = decodedToken.getUid();
+      var uid = decodedToken.getUid(); // Esto no generara ninguna excepcion si el token es valido y no revocado
       return true      
-    } catch {
+    }
+    catch // En caso de error (lo cual generalmente se da porque el token ha sido revocado) entonces retorno falso
+    {
       case e:Exception=>
       return false
     }
   }
   
+  // Metodo para obtener el UID dado un token de Firebase
   def getUID(idToken: String): String = {
-    try {
+    try
+    {
+      // En primer lugar, invocamos el metodo de conexion a Firebase
       setFireBaseConnection
       
+      // Luego, tratamos de decodificar el token y retornamos el UID del mismo
       var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
       return decodedToken.getUid();
     }
-    catch {
+    catch // En caso de error (lo cual generalmente se da porque el token ha sido revocado) entonces retorno ERROR!
+    {
       case e:Exception=>
       return "ERROR!"
     }
@@ -325,7 +417,6 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   // Metodo para exponer el servicio de search
   def searchService = Action { implicit request =>
     // En primer lugar, invocamos la funcion propia de search y le pasamos el cuerpo del mensaje (este ultimo debe ser del tipo Option[JsValue])
-    println("Salida: " + request.body.asJson)
     var result = searchFunction(request.body.asJson)
     
     // Una vez que se obtenga el resultado de search
@@ -343,15 +434,6 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       // NOTA: Si paso algun otro tipo de error dentro de search PERO QUE NO FUE REPENTINO entonces se retorna tal mensaje
     }
   }
-  
-  
-  
-  
-  
-  
-  
-  
-  
   
   // Metodo para recuperar los inmuebles que concuerdan con los parametros de busqueda del usuario
   def searchFunction(request: Option[JsValue]) : Option[JsValue] = {
@@ -524,15 +606,6 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       }
     }
   }
-  
-  
-  
-  
-  
-  
-  
-  
-  
   
   // Metodo para calcular el numero de dias entre dos fechas
   def countDays(date1: String, date2: String): Option[Int] = {
