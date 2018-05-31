@@ -322,6 +322,27 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     }
   }
   
+  // Metodo para exponer el servicio de search
+  def searchService = Action { implicit request =>
+    // En primer lugar, invocamos la funcion propia de search y le pasamos el cuerpo del mensaje (este ultimo debe ser del tipo Option[JsValue])
+    println("Salida: " + request.body.asJson)
+    var result = searchFunction(request.body.asJson)
+    
+    // Una vez que se obtenga el resultado de search
+    // Si el resultado es None es porque sucedio algo inesperado
+    if (result == None)
+    {
+      // Y por tanto, retornamos un mensaje al respecto
+      BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+    }
+    else // Sino
+    {
+      // Entonces, simplemente retornamos los datos de los inmuebles que trajo la funcion search (Que ya deben estar en un Json)
+      Ok(result.get)
+      
+      // NOTA: Si paso algun otro tipo de error dentro de search PERO QUE NO FUE REPENTINO entonces se retorna tal mensaje
+    }
+  }
   
   
   
@@ -332,26 +353,24 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   
   
   
-  
-  
-  // Metodo para recuperar los inmuebles que concuerdan con los parametros de busqueda
-  def search = Action {implicit request =>
-    // Primero que todo, si NO llego nada (o sea, None) entonces
-    if (request.body.asJson == None) {
+  // Metodo para recuperar los inmuebles que concuerdan con los parametros de busqueda del usuario
+  def searchFunction(request: Option[JsValue]) : Option[JsValue] = {
+    // Primero que todo, si NO llego nada (o sea, None) en el cuerpo del mensaje entonces
+    if (request == None) {
       // Retornamos de inmediato y con un json decimos que no recibimos nada
-      BadRequest(Json.obj("status" -> "Error", "message" -> "Request vacio!!!"))
+      return Some(Json.obj("status" -> "Error", "message" -> "Request vacio!!!"))
     }
     else // En caso que si haya llegado un json con "algo" entonces
     {
-      val cuerpoJson = request.body.asJson.get // Recuperamos el json
+      val cuerpoJson = request.get // Recuperamos el json
       val llaves = cuerpoJson.as[JsObject].keys // Sacamos la lista de claves (keys) de dicho json en un Set (Conjunto)
       
       // Y revisamos que si esten las 4 claves necesarias para realizar la busqueda
       // Por lo tanto, si NO estan todas las claves entonces
       if (!llaves.contains("checkIn") || !llaves.contains("checkOut") || !llaves.contains("city") || !llaves.contains("type"))
       {
-        // Abortamos y con un json decimos que faltan parametros
-        BadRequest(Json.obj("status" -> "Error", "message" -> "Request no tiene todos los parametros indicados"))
+        // Abortamos y retornamos un json donde decimos que faltan parametros
+        return Some(Json.obj("status" -> "Error", "message" -> "Request no tiene todos los parametros indicados"))
       }
       else // En caso que si esten los parametros entonces
       {
@@ -366,7 +385,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
         if ((arrivedDate == None) || (departureDate == None))
         {
           // Se aborta y en un json se dice que las fechas deben ser hileras
-          BadRequest(Json.obj("status" -> "Error", "message" -> "Las fechas deben ser tipo String"))
+          return Some(Json.obj("status" -> "Error", "message" -> "Las fechas deben ser tipo String"))
         }
         else // Si las fechas tienen el tipo correcto entonces
         {
@@ -377,17 +396,17 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
           if (numDays == None)
           {
             // Se aborta y en un json se dice que las fechas no estan bien escritas
-            BadRequest(Json.obj("status" -> "Error", "message" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
+            return Some(Json.obj("status" -> "Error", "message" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
           }
           else if (numDays.get < 0) // Por otro lado, si se obtiene que la diferencia es negativa entonces
           {
             // Tambien aborto ya que eso significa que las fechas no tienen el orden correcto
-            BadRequest(Json.obj("status" -> "Error", "message" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
+            return Some(Json.obj("status" -> "Error", "message" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
           }
           else if (numDays.get == 0) // O si la diferencia es cero entonces
           {
             // Igualmente aborto porque el hospedaje minimo es de un dia
-            BadRequest(Json.obj("status" -> "Error", "message" -> "La reserva debe ser de por lo menos de un dia!"))
+            return Some(Json.obj("status" -> "Error", "message" -> "La reserva debe ser de por lo menos de un dia!"))
           }
           else // Ahora, si el calculo de los dias fue correcto entonces
           {
@@ -432,7 +451,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
             if (cityCode == None)
             {
               // Se aborta y en un json se dice que el parametro 'city' tiene un tipo incorrecto
-              BadRequest(Json.obj("status" -> "Error", "message" -> "El tipo del parametro 'city' debe ser String"))
+              return Some(Json.obj("status" -> "Error", "message" -> "El tipo del parametro 'city' debe ser String"))
             }
             else // Sino entonces
             {
@@ -485,18 +504,19 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                 // Al terminar de rellenar el arreglo de inmuebles, dicho arreglo se adjunta al json de respuesta bajo la clave 'homes'
                 jsonResponse = jsonResponse + ("homes" -> arrayHomes)
                 
+                // Antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
+                conexion.close()
+                
                 // Y se retorna el Json de respuesta
-                Ok(jsonResponse)
+                return Some(jsonResponse)
               }
               catch
               {
                 // En caso de error, retornamos un mensaje al respecto
-                case _: Throwable => BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error, mientras se consultaba la BD!"))
-              }
-              finally
-              {
-                // Y antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
-                conexion.close()
+                case _: Throwable =>
+                  // Antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
+                  conexion.close()
+                  return Some(Json.obj("status" -> "Error", "message" -> "Hubo un error, mientras se consultaba la BD!"))
               }
             }
           }
@@ -504,6 +524,15 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       }
     }
   }
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   // Metodo para calcular el numero de dias entre dos fechas
   def countDays(date1: String, date2: String): Option[Int] = {

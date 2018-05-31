@@ -34,7 +34,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       r.get.toString mustBe "Agency(1234-4567-00048-6553,Arrendamientos SCAD,Agencia de arrendamientos para estudiantes de la Universidad de Antioquia.)"
     }
     
-    "Prueba para revisar que la funcion de recuperacion de los datos de los inmuebles esta funcionando" in {
+    "Prueba para revisar que la funcion de recuperacion de los datos de todos los inmuebles esta funcionando" in {
       val controller = inject[HomeController]
       val r = controller.getAllFunction
       
@@ -50,13 +50,165 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       nameHome mustBe "Las Brisas 2"
     }
     
+    "Prueba para revisar que la funcion search - Caso 1: Request vacio" in {
+      val controller = inject[HomeController]
+      val r = controller.searchFunction(None)
+      
+      if (r == None)
+      {
+        r mustBe None
+      }
+      
+      r.get mustBe Json.parse("""{"status":"Error","message":"Request vacio!!!"}""")
+    }
     
     
+    "Prueba para revisar que la funcion search - Caso 2: No estan todos los parametros" in {
+      val controller = inject[HomeController]
+      //val r = controller.searchFunction(Some(Json.obj()))  // Tambien se puede asi, lo que equivale a enviar Some({})
+      val jsonAux: JsValue = Json.parse("""
+        {
+          "checkIn": "07-04-2018",
+          "city": "CO-MDE",
+          "type": "1"
+        }
+      """)
+      val r = controller.searchFunction(Some(jsonAux))
+      
+      if (r == None)
+      {
+        r mustBe None
+      }
+      
+      r.get mustBe Json.parse("""{"status":"Error","message":"Request no tiene todos los parametros indicados"}""")
+    }
     
+    
+    "Prueba para revisar que la funcion search - Caso 3: Las fechas deben ser tipo String" in {
+      val controller = inject[HomeController]
+      val jsonAux: JsValue = Json.parse("""
+        {
+          "checkIn": 7042018,
+          "checkOut": 8042018,
+          "city": "CO-MDE",
+          "type": "1"
+        }
+      """)
+      val r = controller.searchFunction(Some(jsonAux))
+      
+      if (r == None)
+      {
+        r mustBe None
+      }
+      
+      r.get mustBe Json.parse("""{"status":"Error","message":"Las fechas deben ser tipo String"}""")
+    }
+    
+    "Prueba para revisar que la funcion search - Caso 4: Las fechas deben tener el formato DD/MM/YYYY o DD-MM-YYYY" in {
+      val controller = inject[HomeController]
+      val jsonAux: JsValue = Json.parse("""
+        {
+          "checkIn": "07 04 2018",
+          "checkOut": "08~04~2018",
+          "city": "CO-MDE",
+          "type": "1"
+        }
+      """)
+      val r = controller.searchFunction(Some(jsonAux))
+      
+      if (r == None)
+      {
+        r mustBe None
+      }
+      
+      r.get mustBe Json.parse("""{"status":"Error","message":"Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"}""")
+    }
+    
+    "Prueba para revisar que la funcion search - Caso 5: El parametro city debe ser un string" in {
+      val controller = inject[HomeController]
+      val jsonAux: JsValue = Json.parse("""
+        {
+          "checkIn": "07-04-2018",
+          "checkOut": "08-04-2018",
+          "city": 1234,
+          "type": "1"
+        }
+      """)
+      val r = controller.searchFunction(Some(jsonAux))
+      
+      if (r == None)
+      {
+        r mustBe None
+      }
+      
+      r.get mustBe Json.parse("""{"status":"Error","message":"El tipo del parametro 'city' debe ser String"}""")
+    }
+    
+    "Prueba para revisar que la funcion search - Caso 6: Fechas invertidas" in {
+      val controller = inject[HomeController]
+      val jsonAux: JsValue = Json.parse("""
+        {
+          "checkIn": "07-04-2018",
+          "checkOut": "05-04-2018",
+          "city": "CO-MDE",
+          "type": "1"
+        }
+      """)
+      val r = controller.searchFunction(Some(jsonAux))
+      
+      if (r == None)
+      {
+        r mustBe None
+      }
+      
+      r.get mustBe Json.parse("""{"status":"Error","message":"Las fecha de partida no puede ser anterior a la fecha de llegada!"}""")
+    }
+    
+    "Prueba para revisar que la funcion search - Caso 7: Reserva no puede ser de CERO dias" in {
+      val controller = inject[HomeController]
+      val jsonAux: JsValue = Json.parse("""
+        {
+          "checkIn": "07-04-2018",
+          "checkOut": "07-04-2018",
+          "city": "CO-MDE",
+          "type": "1"
+        }
+      """)
+      val r = controller.searchFunction(Some(jsonAux))
+      
+      if (r == None)
+      {
+        r mustBe None
+      }
+      
+      r.get mustBe Json.parse("""{"status":"Error","message":"La reserva debe ser de por lo menos de un dia!"}""")
+    }
+    
+    "Prueba para revisar que la funcion search - Caso 8: Exito en la operacion" in {
+      val controller = inject[HomeController]
+      //val r = controller.searchFunction(Some(Json.obj()))  // Tambien se puede asi, lo que equivale a enviar Some({})
+      val jsonAux: JsValue = Json.parse("""
+        {
+          "checkIn": "07-04-2018",
+          "checkOut": "08-04-2018",
+          "city": "CO-MDE",
+          "type": ["1", "2"]
+        }
+      """)
+      val r = controller.searchFunction(Some(jsonAux))
+      
+      if (r == None)
+      {
+        r mustBe None
+      }
+      
+      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"homes":[{"id":1,"name":"Las Brisas 2","description":"40m2, 2 habitaciones y un baño","location":{"address":"Calle 56a #49-70","latitude":"41.40338","longitude":"2.17403"},"city":"Colombia-Medellin","type":"Apartamento","rating":4.2,"totalAmount":100.25,"pricePerNight":100.25,"thumbnail":"https://es.seaicons.com/wp-content/uploads/2016/09/Actions-go-home-icon.png"},{"id":5,"name":"Turmalina","description":"36m2, 4 habitaciones, 1 baño con jacuzzi, luz natural e Internet","location":{"address":"Circular 3 #71-13","latitude":"6.245713","longitude":"-75.590658"},"city":"Colombia-Medellin","type":"Apartamento","rating":1.6,"totalAmount":168.98,"pricePerNight":168.98,"thumbnail":"https://cdn4.iconfinder.com/data/icons/free-large-business-icons/256/Two-storied_house_SH.png"},{"id":8,"name":"REGATA","description":"45.6m2, 6 habitaciones, 2 baños (1 con jacuzzi), terraza, desayuno gratis e Internet","location":{"address":"Carrera 52 #123-95","latitude":"6.309076","longitude":"-75.555521"},"city":"Colombia-Medellin","type":"Casa","rating":4.8,"totalAmount":305.84,"pricePerNight":305.84,"thumbnail":"https://vignette.wikia.nocookie.net/zombiefarm/images/6/66/Log_Cabin.png/revision/latest?cb=20110114173519"}]}""")
+    }
     
     
   }
   
+  /*
   " ------ Pruebas para las funciones del realase # 2 ------" should {
     
     "Prueba para revisar que el validador de tokens esta funcionando" in {
@@ -164,5 +316,5 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
     }
     
   }
-  
+  */
 }
