@@ -12,6 +12,10 @@ import models.Home
 import play.api.db._ // Este es especialmente necesario para conectarse con la BD
 import org.joda.time.DateTime
 import org.joda.time.Days
+import java.util.Date
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.TimeZone
 import java.io.InputStream
 import java.io.FileInputStream
 import java.io.File
@@ -111,24 +115,55 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                     }
                     else
                     {
+                      // Nota: No se si es por la zona horaria del servidor que aloja la BD o si es por alguna otra configuracion, pero si ejecuto
+                      //       la siguiente instruccion los registro que recupero tienen por una extraña razon las fechas con un dia de adelanto...
+                      //       Simplemente MUY RARO... por eso ejecuto la otra instruccion en donde a cada fecha le RESTO un DIA
+                      //val resultado2 = query.executeQuery(s"SElECT * FROM Booking WHERE homeId = ${idHome.get};")
+                      val resultado2 = query.executeQuery(s"SElECT homeId, DATE_ADD(checkIn, INTERVAL -1 DAY) AS checkIn, DATE_ADD(checkOut, INTERVAL -1 DAY) AS checkOut, idClient, bookingId FROM Booking WHERE homeId = ${idHome.get};")
                       
+                      val formateadorDMY = new SimpleDateFormat("d-M-y")
+                      val formateadorYMD = new SimpleDateFormat("y-M-d")
                       
+                      var auxArrivedDate = ""
+                      var auxDepartureDate = ""
+                      var fechasSolapadas = false
                       
-                      //println("llego")
-                      //println(s"""INSERT INTO Booking VALUES (${idHome.get}, '2018-06-12', '2018-06-23', "${client}", NULL);""")
-                      //val resultadoReserva = query.executeUpdate(s"""INSERT INTO Booking VALUES (${idHome.get}, '2018-06-12', '2018-06-23', "${client}", NULL);""")
-                      //println("paso")
+                      while (resultado2.next() && !fechasSolapadas)
+                      {
+                        auxArrivedDate = formateadorDMY.format(resultado2.getDate("checkIn"))
+                        auxDepartureDate = formateadorDMY.format(resultado2.getDate("checkOut"))
+                        
+                        // Nota: No prestarle atencion a estas instrucciones
+                        //       Estas me ayudaron a encontrar el detallito de las fechas desfasadas
+                        //println(auxArrivedDate)
+                        //println(auxDepartureDate)
+                        //println("---------")
+                        
+                        fechasSolapadas = dateRangesOverlap(arrivedDate.get, departureDate.get, auxArrivedDate, auxDepartureDate)
+                      }
                       
-                      
-                      
-                      
-                      
-                      
-                      Ok(Json.obj("agency" -> infoAgency.get, "codigo" -> SUCCESS, "mensaje" -> "Reserva con exito!!!"))
-                      
-                      
-                      
-                      
+                      if (fechasSolapadas)
+                      {
+                        BadRequest(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> s"Reserva invalida por fechas solapadas! El inmueble esta ocupado del ${auxArrivedDate} al ${auxDepartureDate}"))
+                      }
+                      else
+                      {
+                        val checkIn = formateadorYMD.format(formateadorDMY.parse(arrivedDate.get))
+                        val checkOut = formateadorYMD.format(formateadorDMY.parse(departureDate.get))
+                        
+                        // Nota: No prestarle atencion a estas instrucciones
+                        //       Estas me ayudaron a encontrar el detallito de las fechas desfasadas
+                        //println(checkIn)
+                        //println(checkOut)
+                        
+                        // Nota: VUELVE y JUEGA...
+                        //       Esta vez cuando inserto el registro, las fechas me les RESTA UN DIA...
+                        //       Entonces, en la segunda instruccion TOCA SUMARLE UN DIA para compensar el desfase
+                        //val resultadoReserva = query.executeUpdate(s"""INSERT INTO Booking VALUES (${idHome.get}, '${checkIn}', '${checkOut}', "${client}", NULL);""")
+                        val resultadoReserva = query.executeUpdate(s"""INSERT INTO Booking VALUES (${idHome.get}, '${checkIn}'+INTERVAL 1 DAY, '${checkOut}'+INTERVAL 1 DAY, "${client}", NULL);""")
+                        
+                        Ok(Json.obj("agency" -> infoAgency.get, "codigo" -> SUCCESS, "mensaje" -> "Reserva con exito!!!"))
+                      }
                     }
                   }
                 }
@@ -464,6 +499,49 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     catch
     {
       case _: Throwable => None // En caso de error, se retorna None -nada- (Como indicativo de que sucedio un error)
+    }
+  }
+  
+  // Metodo para determinar si dos rangos de fechas se solapan
+  // Link que me ayudo:
+  //   Determine Whether Two Date Ranges Overlap
+  //   https://stackoverflow.com/questions/325933/determine-whether-two-date-ranges-overlap?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+  def dateRangesOverlap(startDateA: String, endDateA: String, startDateB: String, endDateB: String): Boolean = {
+    var aux = startDateA.split(Array('-', '/'))
+    val day1A = aux(0).toInt 
+    val month1A = aux(1).toInt
+    val year1A = aux(2).toInt
+    
+    val jodaDate1A = new DateTime(year1A, month1A, day1A, 0, 0)
+    
+    aux = endDateA.split(Array('-', '/'))
+    val day2A = aux(0).toInt 
+    val month2A = aux(1).toInt
+    val year2A = aux(2).toInt
+    
+    val jodaDate2A = new DateTime(year2A, month2A, day2A, 0, 0)
+    
+    aux = startDateB.split(Array('-', '/'))
+    val day1B = aux(0).toInt 
+    val month1B = aux(1).toInt
+    val year1B = aux(2).toInt
+    
+    val jodaDate1B = new DateTime(year1B, month1B, day1B, 0, 0)
+    
+    aux = endDateB.split(Array('-', '/'))
+    val day2B = aux(0).toInt 
+    val month2B = aux(1).toInt
+    val year2B = aux(2).toInt
+    
+    val jodaDate2B = new DateTime(year2B, month2B, day2B, 0, 0)
+    
+    if ((jodaDate1A.isBefore(jodaDate2B) || jodaDate1A.isEqual(jodaDate2B)) && (jodaDate2A.isAfter(jodaDate1B) || jodaDate2A.isEqual(jodaDate1B)))
+    {
+      return true
+    }
+    else
+    {
+      return false
     }
   }
 
