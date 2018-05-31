@@ -11,6 +11,6 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 
 # Rutas del aplicativo ScadAppRentings
 GET     /v1/agency/info        controllers.HomeController.getAgencyInfoService
-GET     /v1/homes/all          controllers.HomeController.getAll
+GET     /v1/homes/all          controllers.HomeController.getAllService
 POST    /v1/homes/search       controllers.HomeController.search
 POST    /v1/homes/booking      controllers.HomeController.booking

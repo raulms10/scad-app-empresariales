@@ -225,25 +225,30 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       return "ERROR!"
     }
   }
-
-  //var agency:Agency = new Agency("","", "")
-  // Metodo para recuperar los datos de la agencia
-  def getAgencyInfoService = Action {    
+  
+  // Metodo para exponer el servicio de recuperar los datos de la agencia
+  def getAgencyInfoService = Action {
+    // En primer lugar, tratamos de recuperar los datos de la agencia
     var result = getAgencyInfoFunction()
-
-
-    if (result == None){
-      // Y retornamos como un json los resultados (info de la agencia)
+    
+    // Si el resultado es None es porque sucedio algo inesperado
+    if (result == None)
+    {
+      // Y por tanto, retornamos un mensaje al respecto
       BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
-    }else{
-      // En caso de error, retornamos un mensaje al respecto
+    }
+    else // Sino
+    {
+      // Entonces, simplemente retornamos los datos de la agencia como un Json
       Ok(Json.toJson(result.get))
     }
   }
-
+  
+  // Metodo que realiza la logica (el trabajo) de recuperar los datos de la agencia
   def getAgencyInfoFunction() :Option[Agency] = {
     // Primero creamos una variable para realizar la conexion con la BD
     val conexion = db.getConnection()
+    
     try {
       // Luego creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
       val query = conexion.createStatement
@@ -255,19 +260,39 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
 
       // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
       conexion.close()
+      
+      // Y retornamos el objeto agencia
       return Some(agency)
     }
-    catch {
-      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
-      // En caso de error, retornamos un mensaje al respecto
+    catch // En caso de error
+    {
+      // Cerramos la conexion a la BD y retornamos None
       case e: Exception => 
         conexion.close()
         return None
     }
   }
   
-  // Metodo para recuperar todos los inmuebles de la agencia
-  def getAll = Action {
+  // Metodo para exponer el servicio que recupera todos los inmuebles de la agencia
+  def getAllService = Action {
+    // En primer lugar, tratamos de recuperar los datos de todos los inmuebles
+    var result = getAllFunction
+    
+    // Si el resultado es None es porque sucedio algo inesperado
+    if (result == None)
+    {
+      // Y por tanto, retornamos un mensaje al respecto
+      BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+    }
+    else // Sino
+    {
+      // Entonces, simplemente retornamos los datos de todos los inmuebles como un Json
+      Ok(Json.toJson(result.get))
+    }
+  }
+  
+  // Metodo que realiza la logica (el trabajo) para recuperar todos los inmuebles de la agencia
+  def getAllFunction :Option[List[Home]] = {
     // Primero, se crea una lista vacia para manejar los datos de los inmuebles que lleguen de la BD
     var arrayHomes = List[Home]()
 
@@ -285,19 +310,29 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
         arrayHomes = arrayHomes :+ aux
       }
 
-      // Ya con nuestros resultados preparados, los tranformamos en formato Json y los retornamos
-      val jsonAux = Json.toJson(arrayHomes)
-      Ok(jsonAux)
+      // Ya con nuestros resultados preparados, cerramos la conexion y retornamos los resultados
+      conexion.close()
+      return Some(arrayHomes)
     }
     catch {
-      // En caso de error, retornamos un mensaje al respecto
-      case _: Throwable => BadRequest(Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
-    }
-    finally {
-      // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
-      conexion.close()
+      // En caso de error, cerramos la conexion a la BD y retornamos None
+      case e: Exception => 
+        conexion.close()
+        return None
     }
   }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   // Metodo para recuperar los inmuebles que concuerdan con los parametros de busqueda
   def search = Action {implicit request =>
@@ -507,40 +542,51 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   //   Determine Whether Two Date Ranges Overlap
   //   https://stackoverflow.com/questions/325933/determine-whether-two-date-ranges-overlap?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
   def dateRangesOverlap(startDateA: String, endDateA: String, startDateB: String, endDateB: String): Boolean = {
+    // Para empezar, tokenizamos la 1er fecha del primer intervalo (ya sea que los delimitadores sean: '-' o '/')
     var aux = startDateA.split(Array('-', '/'))
-    val day1A = aux(0).toInt 
-    val month1A = aux(1).toInt
-    val year1A = aux(2).toInt
+    val day1A = aux(0).toInt       // El 1er token debe ser el dia
+    val month1A = aux(1).toInt     // El 2do token debe ser el mes
+    val year1A = aux(2).toInt      // El 3er token debe ser el año
     
+    // Ya separado correctamente el dia, el mes y el año, creamos un objeto datatime con los datos que obtuvimos
     val jodaDate1A = new DateTime(year1A, month1A, day1A, 0, 0)
     
+    // Luego, tokenizamos la 2da fecha del primer intervalo
     aux = endDateA.split(Array('-', '/'))
-    val day2A = aux(0).toInt 
-    val month2A = aux(1).toInt
-    val year2A = aux(2).toInt
+    val day2A = aux(0).toInt       // El 1er token debe ser el dia
+    val month2A = aux(1).toInt     // El 2do token debe ser el mes
+    val year2A = aux(2).toInt      // El 3er token debe ser el año
     
+    // Nuevamente, creamos un objeto datatime con los datos que obtuvimos
     val jodaDate2A = new DateTime(year2A, month2A, day2A, 0, 0)
     
+    // Ahora, tokenizamos la 1er fecha del segundo intervalo
     aux = startDateB.split(Array('-', '/'))
-    val day1B = aux(0).toInt 
-    val month1B = aux(1).toInt
-    val year1B = aux(2).toInt
+    val day1B = aux(0).toInt       // El 1er token debe ser el dia
+    val month1B = aux(1).toInt     // El 2do token debe ser el mes
+    val year1B = aux(2).toInt      // El 3er token debe ser el año
     
+    // Volvemos a crear un objeto datatime con los datos que obtuvimos
     val jodaDate1B = new DateTime(year1B, month1B, day1B, 0, 0)
     
+    // Y, tokenizamos la 2da fecha del segundo intervalo
     aux = endDateB.split(Array('-', '/'))
-    val day2B = aux(0).toInt 
-    val month2B = aux(1).toInt
-    val year2B = aux(2).toInt
+    val day2B = aux(0).toInt       // El 1er token debe ser el dia
+    val month2B = aux(1).toInt     // El 2do token debe ser el mes
+    val year2B = aux(2).toInt      // El 3er token debe ser el año
     
+    // Y hacemos un ultimo objeto datatime con los datos que obtuvimos
     val jodaDate2B = new DateTime(year2B, month2B, day2B, 0, 0)
     
+    // Finalmente, si (la fecha de inicio del 1er intervalo es menor o igual a la fecha de fin del 2do intervalo) y (la fecha de fin del 1er intervalo es mayor o igual a la fecha de inicio del 2do intervalo) entonces
     if ((jodaDate1A.isBefore(jodaDate2B) || jodaDate1A.isEqual(jodaDate2B)) && (jodaDate2A.isAfter(jodaDate1B) || jodaDate2A.isEqual(jodaDate1B)))
     {
+      // Retornamos verdadero (o sea, que los intervalos se cruzan, es decir se solapan o al menos se tocan)
       return true
     }
-    else
+    else // sino
     {
+      // Retornamos falso
       return false
     }
   }
