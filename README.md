@@ -164,8 +164,7 @@ Devuelve las casas registradas según los parámetros de entrada
 ```
 > ### POST    /v1/homes/booking
 #### Descripción
-Realiza la reserva del inmueble segun los parametros de entrada
-Nota: Booking requiere que dentro del encabezado de la petición se encuentre el token de autenticación del usuario
+Realiza la reserva del inmueble segun los parametros de entrada. Booking requiere que dentro del encabezado de la petición se encuentre el token de autenticación del usuario
 #### Cabecera de la petición
 ```
 	"token": "123456789..."
@@ -404,7 +403,7 @@ Elimina la reserva especificada en el json de entrada solo si el token entregado
 #### JSON entrada
 ```
 {
-   "bookingId": "X@/157"
+	"bookingId": "X@/157"
 }
 ```
 #### JSON salida
