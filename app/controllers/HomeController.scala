@@ -63,8 +63,8 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   }
 
   //Método para consultar las reservas de un usuario (Service)
-  def getBookingService = Action {
-    var result = getBookingFunction()
+  def getBookingService(token: String) = Action {
+    var result = getBookingFunction(token)
 
 
     if (result == None){
@@ -77,33 +77,44 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   }
 
   //Método para consultar las reservas de un usuario
-  def getBookingFunction() :Option[JsObject] = {
+  def getBookingFunction(token: String) :Option[JsObject] = {
     val conexion = db.getConnection()
     try {
+      //Consultamos el email
+      val email = token//= getEmail(token);
+
       //Creamos la consulta SQL
       val q:String = "SELECT * FROM Home h INNER JOIN Booking b ON h.id=b.homeId WHERE b.idClient=? ORDER BY h.id"
       // Creamos una variable en donde formularemos nuestra query SQL de busqueda
       val query = conexion.prepareStatement(q)
       //Ingresamos el paramtro del cliente
-      query.setString(1, "id-client-1")
-      println("Qurey: " +q)
+      query.setString(1, email)
+      //println("Qurey: " +q)
       val result = query.executeQuery();
       // Se crea un arreglo json vacio el cual se ira rellenando con jsons que tengan los datos de cada una de las casas con sus reservas
       var arrayHomes = JsArray()
       var arrayBooking = JsArray()
       var jsonResponse = Json.obj()
       var idHome = 0
-      var idHomeAnt = 0
+      var daysBooking = 0
+      var idHomeAnt = -1
       var jsonAuxHome = Json.obj()
       var jsonAuxBooking = Json.obj()
       var jsonLocation = Json.obj()
+      //println("Home: " + jsonAuxHome + " ArrayHome: " + arrayHomes)
       while (result.next()){
           idHome = result.getInt("homeId");
-          println("Id_Home: " + idHome + " Ant: " + idHomeAnt)
+          //println("Id_Home: " + idHome + " Ant: " + idHomeAnt)
           if (idHome != idHomeAnt){
+            if(idHomeAnt != -1){
+              val priceNight = (jsonAuxHome \ "pricePerNight").asOpt[Double].get
+              val total = daysBooking * priceNight
+              //println("Total" + total + " price: " + priceNight)
+              jsonAuxHome = jsonAuxHome + ("totalAmount" -> JsNumber(total))
+              jsonAuxHome = jsonAuxHome + ("booking" -> arrayBooking)
+              arrayHomes = arrayHomes :+ jsonAuxHome
+            }
             idHomeAnt = idHome
-            jsonAuxHome = jsonAuxHome + ("booking" -> arrayBooking)
-            arrayHomes = arrayHomes :+ jsonAuxHome
             jsonLocation = Json.obj("address"-> result.getString("address"),
                                     "latitude"-> result.getString("latitude"),
                                     "longitude"-> result.getString("longitude")
@@ -115,21 +126,36 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                                   "city" -> result.getString("city"),
                                   "type"-> result.getInt("type"),
                                   "rating"-> result.getDouble("rating"),
-                                  "totalAmount"-> 1233,
+                                  "totalAmount"-> 0,
                                   "pricePerNight"-> result.getDouble("pricePerNight"),
                                   "thumbnail" -> result.getString("thumbnail")
                                 )
             arrayBooking = JsArray()
+            daysBooking = 0
           }
-          jsonAuxBooking = Json.obj("checkIn" -> result.getString("checkIn"),
-                                   "checkOut" -> result.getString("checkOut"),
+          var fIn = result.getString("checkIn").split(Array('-', '/'))
+          val fechaIn = fIn(2).toString +"-"+ fIn(1).toString+"-"+fIn(0).toString
+          var fOut = result.getString("checkOut").split(Array('-', '/'))
+          val fechaOut = fOut(2).toString +"-"+ fOut(1).toString+"-"+fOut(0).toString
+          jsonAuxBooking = Json.obj("checkIn" -> JsString(fechaIn),
+                                   "checkOut" -> JsString(fechaOut),
                                    "bookingId" -> result.getInt("bookingId")
                                  )
+          val days = countDays(fechaIn, fechaOut)
+          //println("Days Antes: " + daysBooking + " fAntes: " + fechaIn)
+          if (days != None){
+            daysBooking = daysBooking + days.get
+          }
+          //println("Days Despues: " + daysBooking + " fDespues" + fechaOut)
           arrayBooking = arrayBooking :+ jsonAuxBooking
       }
-      
-      jsonAuxHome = jsonAuxHome + ("booking" -> arrayBooking)
-      arrayHomes = arrayHomes :+ jsonAuxHome
+      if (idHomeAnt != -1){
+        val priceNight = (jsonAuxHome \ "pricePerNight").asOpt[Double].get
+        val total = daysBooking * priceNight
+        jsonAuxHome = jsonAuxHome + ("totalAmount" -> JsNumber(total))
+        jsonAuxHome = jsonAuxHome + ("booking" -> arrayBooking)
+        arrayHomes = arrayHomes :+ jsonAuxHome
+      }
 
       val res = getAgencyInfoFunction()
 
@@ -151,7 +177,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
       case e: Exception => 
         conexion.close()
-        println(e)
+        //println(e)
         return None
     }
   }
@@ -165,12 +191,12 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       val query = conexion.prepareStatement(q)
       //java.sql.Date sqlDate = new java.sql.Date(utilDate.getTime());
       val f = new Date(today.getTime());
-      println(f)
+      //println(f)
       val jTime = new DateTime(2018, 5, 25, 0, 0)
       //query.setDate(1, jTime)
       //query.setDate(2, jTime)
       //val resultado = query.executeQuery("SELECT * FROM Homes INNER JOIN Booking ON ...");
-      println("Qurey: " +q)
+      //println("Qurey: " +q)
       val resultado = query.executeUpdate();
       // Se crea un arreglo json vacio el cual se ira rellenando con jsons que tengan los datos de cada una de las casas con sus reservas
       conexion.close()
@@ -180,7 +206,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
       case e: Exception => 
         conexion.close()
-        println(e)
+        //println(e)
         return "NO"
     }
   }
