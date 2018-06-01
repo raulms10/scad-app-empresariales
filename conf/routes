@@ -13,4 +13,6 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 GET     /v1/agency/info               controllers.HomeController.getAgencyInfoService
 GET     /v1/homes/all                 controllers.HomeController.getAllService
 POST    /v1/homes/search              controllers.HomeController.searchService
-POST    /v1/homes/myBooking/:token    controllers.HomeController.getBookingService(token :String)
+POST    /v1/homes/myBooking           controllers.HomeController.getBookingService
+POST    /v1/homes/booking             controllers.HomeController.bookingService
+#DELETE  /v1/homes/removeBooking       controllers.HomeController.removeBookingService
