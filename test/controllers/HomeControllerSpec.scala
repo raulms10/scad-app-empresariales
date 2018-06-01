@@ -34,7 +34,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
     }
 
-    "Test getBookingFunction('id-client-1') for usuario existente from Unit" in {
+    "Test getBookingFunction('id-client-1') para usuario existente from Unit" in {
       val controller = inject[HomeController]
       val r = controller.getBookingFunction("id-client-1")
       if (r == None){
@@ -44,7 +44,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       r.get.toString must include ("\"agency\":{")
     }
 
-    "Test getBookingFunction('token-no-valido') for usuario NO existente from Unit" in {
+    "Test getBookingFunction('token-no-valido') para usuario NO existente from Unit" in {
       val controller = inject[HomeController]
       val r = controller.getBookingFunction("token-no-valido")
       if (r == None){
@@ -53,5 +53,22 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       r.get.toString must include ("\"homes\":[]")
       r.get.toString must include ("\"agency\":{")
     }
+
+    "Test getBookingService('id-client-1') para usuario existente from Unit" in {
+      val controller = inject[HomeController]
+      val r = controller.getBookingService("id-client-1")
+      r.toString must include ("Action") 
+      //contentAsString(r.apply()).contains("\"homes\":[{")
+      //contentAsString(r.apply).contains("\"agency\":{")
+    }
+
+    "Test getBookingService('token-no-valido') para usuario NO existente from Unit" in {
+      val controller = inject[HomeController]
+      val r = controller.getBookingService("token-no-valido")
+      r.toString must include ("Action")
+      //contentAsString(r.apply()).contains("\"homes\":[]")
+      //contentAsString(r.apply()).contains("\"agency\":{")
+    }
+
   }
 }
