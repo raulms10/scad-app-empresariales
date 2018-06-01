@@ -18,4 +18,5 @@ libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.41"
 libraryDependencies += "com.github.nscala-time" %% "nscala-time" % "2.18.0"
 
 // Dependencia para trabajar con Firebase
-libraryDependencies += "com.google.firebase" % "firebase-admin" % "6.1.0"
+//libraryDependencies += "com.google.firebase" % "firebase-admin" % "6.1.0"
+libraryDependencies += "com.google.firebase" % "firebase-server-sdk" % "3.0.3"

@@ -70,7 +70,7 @@ Devuelve las casas registradas según los parámetros de entrada
 }
 ```
 #### JSON salida
-##### En caso de éxtio
+##### En caso de éxito
 ```
 {
     "agency": {
@@ -113,10 +113,321 @@ Devuelve las casas registradas según los parámetros de entrada
     ]
 }
 ```
+##### En caso de error - Caso 1: Request vacio
+```
+{
+	"status": "Error",
+	"message": "Request vacio!!!"
+}
+```
+##### En caso de error - Caso 2: No estan todos los parametros
+```
+{
+	"status": "Error",
+	"message": "Request no tiene todos los parametros indicados"
+}
+```
+##### En caso de error - Caso 3: Las fechas deben ser tipo String
+```
+{
+	"status": "Error",
+	"message": "Las fechas deben ser tipo String"
+}
+```
+##### En caso de error - Caso 4: Las fechas deben tener el formato DD/MM/YYYY o DD-MM-YYYY
+```
+{
+	"status": "Error",
+	"message": "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"
+}
+```
+##### En caso de error - Caso 5: El parametro city debe ser un string
+```
+{
+	"status": "Error",
+	"message": "El tipo del parametro 'city' debe ser String"
+}
+```
+##### En caso de error - Caso 6: Fechas invertidas
+```
+{
+	"status": "Error",
+	"message": "Las fecha de partida no puede ser anterior a la fecha de llegada!"
+}
+```
+##### En caso de error - Caso 7: Reserva no puede ser de CERO dias
+```
+{
+	"status": "Error",
+	"message": "La reserva debe ser de por lo menos de un dia!"
+}
+```
+> ### POST    /v1/homes/booking
+#### Descripción
+Realiza la reserva del inmueble segun los parametros de entrada. Booking requiere que dentro del encabezado de la petición se encuentre el token de autenticación del usuario
+#### Cabecera de la petición
+```
+	"token": "123456789..."
+```
+#### JSON entrada
+```
+{
+	"checkIn": "04-05-2019",
+	"checkOut": "21-05-2019",
+	"id": 9
+}
+```
+#### JSON salida
+##### En caso de éxito
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 1,
+	"mensaje": "Reserva con exito!!!"
+}
+```
+##### En caso de error - Caso 1: Request vacio
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "Request vacio!!!"
+}
+```
+##### En caso de error - Caso 2: No estan todos los parametros
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "Request no tiene todos los parametros indicados"
+}
+```
+##### En caso de error - Caso 3: No se envio token de autenticacion
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "No hay ninguna clave token en el encabezado"
+}
+```
+##### En caso de error - Caso 4: Token no valido
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "Token de usuario invalido"
+}
+```
+##### En caso de error - Caso 5: Fechas con formato incorrecto (Ej: Numeros)
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "Las fechas deben ser tipo String"
+}
+```
+##### En caso de error - Caso 6: Id de la casa no es un numero
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "El ID del inmueble debe ser un numero"
+}
+```
+##### En caso de error - Caso 7: Id de la casa no existe
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "El ID del inmueble no existe en la BD"
+}
+```
+##### En caso de error - Caso 8: Fechas sin formato correcto
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"
+}
+```
+##### En caso de error - Caso 9: Fechas invertidas
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "Las fecha de partida no puede ser anterior a la fecha de llegada!"
+}
+```
+##### En caso de error - Caso 10: Reserva de CERO DIAS
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "La reserva debe ser de por lo menos de un dia!"
+}
+```
+##### En caso de error - Caso 11: Fechas solapadas
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "Reserva invalida por fechas solapadas! El inmueble esta ocupado del 15-5-2019 al 19-5-2019"
+}
+```
+> ### POST    /v1/homes/myBooking
+#### Descripción
+Devuelve todos las reservas asociadas al token dado en el encabezado de la petición
+#### Cabecera de la petición
+```
+	"token": "123456789..."
+```
+#### JSON entrada
+N/A
+#### JSON salida
+```
+{
+    "agency": {
+        "name": "Arrendamientos Santa Fé",
+        "nit": "1123-1233-12313-51414"
+    },
+    "homes": [
+        {
+            "id": 1 ,
+            "name": "Torre davivienda",
+            "description": "Apartamento muy comodito",
+            "location": {
+                "address": "Avenida siempre viva 123",
+                "latitude": "4.1231231",
+                "longitude": "-421213212"
+            },
+            "city": "Medellín",
+            "type": "Apartamento",
+            "rating": "4.9",
+            "totalAmount": "932.234",
+            "pricePerNight": "100.233",
+            "thumbnail": "https://goo.gl/sccYgg",
+            "booking":[
+                {
+                    "checkIn": "07-04-2018",
+                    "checkOut": "10-04-2018",
+                    "bookingId": "X@/157" //id de la reserva
+                },
+                {
+                    "checkIn": "03-06-2018",
+                    "checkOut": "10-08-2018",
+                    "bookingId": "X@/158"
+                }
+            ]
+        }, 
+        {
+            "id": 2 ,
+            "name": "La quinta porra",
+            "description": "Apartamento muy lejos",
+            "location": {
+                "address": "Cra 1 # 1 A 1",
+                "latitude": "5.12",
+                "longitude": "21213212"
+            },
+            "city": "Medellín",
+            "type": "Casa",
+            "rating": "2",
+            "totalAmount": "50.000",
+            "pricePerNight": "20.000",
+            "thumbnail": "https://goo.gl/sccYgg",
+            "booking":[
+                {
+                    "checkIn": "06-07-2018",
+                    "checkOut": "10-04-2018",
+                    "bookingId": "X@/200"
+                }
+            ]
+        }
+    ]
+}
+```
+> ### DELETE /v1/homes/removeBooking
+#### Descripción
+Elimina la reserva especificada en el json de entrada solo si el token entregado en la cabecera es valido
+#### Cabecera de la petición
+```
+	"token": "123456789..."
+```
+#### JSON entrada
+```
+{
+	"bookingId": "X@/157"
+}
+```
+#### JSON salida
+##### En caso de éxito
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 1,
+	"mensaje": "Cancelacion con exito!!!"
+}
+```
 ##### En caso de error
 ```
 {
-    "message": "El recurso solicitado no se encuentra disponible."
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "Hubo un error!"
 }
 ```
-
