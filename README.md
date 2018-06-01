@@ -2,6 +2,8 @@
 Repositorio para realizar el proyecto de app empresariales
 
 [ ![Codeship Status for sebastian-montoyaj/scad-app-empresariales](https://app.codeship.com/projects/720d8df0-3b8f-0136-f448-5e3eb9768dd6/status?branch=master)](https://app.codeship.com/projects/290356)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/5a43a18797f949029d03d09b5aab4beb)](https://www.codacy.com/app/sebastian-montoyaj/scad-app-empresariales?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=sebastian-montoyaj/scad-app-empresariales&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://api.codacy.com/project/badge/Coverage/5a43a18797f949029d03d09b5aab4beb)](https://www.codacy.com/app/sebastian-montoyaj/scad-app-empresariales?utm_source=github.com&utm_medium=referral&utm_content=sebastian-montoyaj/scad-app-empresariales&utm_campaign=Badge_Coverage)
 
 ## Funcionaliades
 > ### GET     /v1/agency/info
