@@ -113,10 +113,52 @@ Devuelve las casas registradas según los parámetros de entrada
     ]
 }
 ```
-##### En caso de error
+##### En caso de error - Caso 1: Request vacio
 ```
 {
-    "message": "El recurso solicitado no se encuentra disponible."
+	"status": "Error",
+	"message": "Request vacio!!!"
 }
 ```
-
+##### En caso de error - Caso 2: No estan todos los parametros
+```
+{
+	"status": "Error",
+	"message": "Request no tiene todos los parametros indicados"
+}
+```
+##### En caso de error - Caso 3: Las fechas deben ser tipo String
+```
+{
+	"status": "Error",
+	"message": "Las fechas deben ser tipo String"
+}
+```
+##### En caso de error - Caso 4: Las fechas deben tener el formato DD/MM/YYYY o DD-MM-YYYY
+```
+{
+	"status": "Error",
+	"message": "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"
+}
+```
+##### En caso de error - Caso 5: El parametro city debe ser un string
+```
+{
+	"status": "Error",
+	"message": "El tipo del parametro 'city' debe ser String"
+}
+```
+##### En caso de error - Caso 6: Fechas invertidas
+```
+{
+	"status": "Error",
+	"message": "Las fecha de partida no puede ser anterior a la fecha de llegada!"
+}
+```
+##### En caso de error - Caso 7: Reserva no puede ser de CERO dias
+```
+{
+	"status": "Error",
+	"message": "La reserva debe ser de por lo menos de un dia!"
+}
+```
