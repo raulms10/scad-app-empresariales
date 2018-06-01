@@ -323,4 +323,112 @@ Nota: Booking requiere que dentro del encabezado de la petición se encuentre el
 	"mensaje": "Reserva invalida por fechas solapadas! El inmueble esta ocupado del 15-5-2019 al 19-5-2019"
 }
 ```
-
+> ### POST    /v1/homes/myBooking
+#### Descripción
+Devuelve todos las reservas asociadas al token dado en el encabezado de la petición
+#### Cabecera de la petición
+```
+	"token": "123456789..."
+```
+#### JSON entrada
+N/A
+#### JSON salida
+```
+{
+    "agency": {
+        "name": "Arrendamientos Santa Fé",
+        "nit": "1123-1233-12313-51414"
+    },
+    "homes": [
+        {
+            "id": 1 ,
+            "name": "Torre davivienda",
+            "description": "Apartamento muy comodito",
+            "location": {
+                "address": "Avenida siempre viva 123",
+                "latitude": "4.1231231",
+                "longitude": "-421213212"
+            },
+            "city": "Medellín",
+            "type": "Apartamento",
+            "rating": "4.9",
+            "totalAmount": "932.234",
+            "pricePerNight": "100.233",
+            "thumbnail": "https://goo.gl/sccYgg",
+            "booking":[
+                {
+                    "checkIn": "07-04-2018",
+                    "checkOut": "10-04-2018",
+                    "bookingId": "X@/157" //id de la reserva
+                },
+                {
+                    "checkIn": "03-06-2018",
+                    "checkOut": "10-08-2018",
+                    "bookingId": "X@/158"
+                }
+            ]
+        }, 
+        {
+            "id": 2 ,
+            "name": "La quinta porra",
+            "description": "Apartamento muy lejos",
+            "location": {
+                "address": "Cra 1 # 1 A 1",
+                "latitude": "5.12",
+                "longitude": "21213212"
+            },
+            "city": "Medellín",
+            "type": "Casa",
+            "rating": "2",
+            "totalAmount": "50.000",
+            "pricePerNight": "20.000",
+            "thumbnail": "https://goo.gl/sccYgg",
+            "booking":[
+                {
+                    "checkIn": "06-07-2018",
+                    "checkOut": "10-04-2018",
+                    "bookingId": "X@/200"
+                }
+            ]
+        }
+    ]
+}
+```
+> ### DELETE /v1/homes/removeBooking
+#### Descripción
+Elimina la reserva especificada en el json de entrada solo si el token entregado en la cabecera es valido
+#### Cabecera de la petición
+```
+	"token": "123456789..."
+```
+#### JSON entrada
+```
+{
+   "bookingId": "X@/157"
+}
+```
+#### JSON salida
+##### En caso de éxito
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 1,
+	"mensaje": "Cancelacion con exito!!!"
+}
+```
+##### En caso de error
+```
+{
+	"agency": {
+		"nit": "1234-4567-00048-6553",
+		"name": "Arrendamientos SCAD",
+		"description": "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."
+	},
+	"codigo": 0,
+	"mensaje": "Hubo un error!"
+}
+```
