@@ -34,19 +34,24 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
     }
 
-    "Test getBookingFunction from Unit" in {
+    "Test getBookingFunction('id-client-1') for usuario existente from Unit" in {
       val controller = inject[HomeController]
-      val r = controller.getBookingFunction("algun-token")
-      if (r == None)
-      r mustBe ""
-      r.get.toString mustBe "{}"
+      val r = controller.getBookingFunction("id-client-1")
+      if (r == None){
+        r.toString mustBe ""
+      }
+      r.get.toString must include ("\"homes\":[{")
+      r.get.toString must include ("\"agency\":{")
     }
 
-    "Test getInsertFunction from Unit" in {
+    "Test getBookingFunction('token-no-valido') for usuario NO existente from Unit" in {
       val controller = inject[HomeController]
-      val r = controller.getInsertFunction()
-      r mustBe "OK"
+      val r = controller.getBookingFunction("token-no-valido")
+      if (r == None){
+        r.toString mustBe ""
+      }
+      r.get.toString must include ("\"homes\":[]")
+      r.get.toString must include ("\"agency\":{")
     }
-
   }
 }

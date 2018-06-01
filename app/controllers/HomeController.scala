@@ -161,7 +161,8 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
 
 
       if (res == None){
-        jsonResponse = jsonResponse + ("agency" -> Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+        //jsonResponse = jsonResponse + ("agency" -> Json.obj("status" -> "Error", "message" -> "Hubo un error!"))
+        return Some(Json.obj("status" -> "Error", "message" -> "Ha ocurrido un error al obtener los datos de la agencia"))
       }else{      
         jsonResponse = jsonResponse + ("agency" ->  Json.toJson(res.get))
       }
@@ -187,7 +188,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     try {
       // Creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
       val today = Calendar.getInstance().getTime()
-      val q:String = "INSERT INTO booking VALUES(2, '2018-05-18', '2018-05-20', 'id-client-1', 7)"
+      val q:String = "INSERT INTO booking VALUES(2, '2018-05-18', '2018-05-20', 'id-client-1', 10)"
       val query = conexion.prepareStatement(q)
       //java.sql.Date sqlDate = new java.sql.Date(utilDate.getTime());
       val f = new Date(today.getTime());
