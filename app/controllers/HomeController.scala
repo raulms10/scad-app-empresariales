@@ -79,7 +79,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     try {
       // Ahora creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
       val query = conexion.createStatement
-      val resultado = query.executeQuery("SELECT * FROM Home")
+      val resultado = query.executeQuery("SELECT id, name, description, address, latitude, longitude, city, type, rating, pricePerNight, thumbnail, agencyCode FROM Home")
 
       // Si todo salio bien, entonces recorremos cada uno de los registros obtenidos y los vamos convirtiendo a objetos Home, los cuales a su vez se agregan a una lista de apoyo
       while (resultado.next()){
@@ -215,7 +215,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                 val query = conexion.createStatement
                 
                 // Como primer query, vamos a obtener los datos de la agencia y a formatear los mismos a un json
-                val resultado1 = query.executeQuery("SELECT * FROM Agency")
+                val resultado1 = query.executeQuery("SELECT nit, name, description FROM Agency")
                 resultado1.next()
                 var jsonInfoAgency= Json.obj("nit" -> resultado1.getString("nit"),
                                             "name" -> resultado1.getString("name"),
