@@ -3,15 +3,15 @@ package controllers
 import org.scalatestplus.play._
 import org.scalatestplus.play.guice._
 import play.api.test._
-import models.Agency
-import models.Home
 import play.api.test.Helpers._
+import models.{Agency, Home}
 import play.api.libs.json._
 
 // Clase para ejecutar las pruebas del backend YoTeArriendo de scala
 class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting {
   
-  val TESTTOKEN = "123456" // Poner aqui un token valido para hacer las pruebas del Realease # 2 y para el metodo de verifyId
+  // ==== Variables o constantes comunes para todas las pruebas ====
+  val TestToken = "123456" // Poner aqui un token valido para hacer las pruebas del Realease # 2 y para el metodo de verifyId
   
   " ------ Pruebas para las funciones del realase # 1 ------" should {
     
@@ -31,7 +31,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       {
         r mustBe None
       }
-      r.get mustBe Json.obj("nit" -> "1234-4567-00048-6553","name" -> "Arrendamientos SCAD","description" -> "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia.")
+      r mustBe Some(Json.obj("nit" -> "1234-4567-00048-6553","name" -> "Arrendamientos SCAD","description" -> "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."))
     }
     
     "Prueba para revisar que la funcion de recuperacion de los datos de todos los inmuebles esta funcionando" in {
@@ -44,9 +44,9 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       }
       
       val jsonAux = r.get(0)
-      val nameHome = (jsonAux \ "name").asOpt[String].get
+      val nameHome = (jsonAux \ "name").asOpt[String]
       
-      nameHome mustBe "Las Brisas 2"
+      nameHome mustBe Some("Las Brisas 2")
     }
     
     "Prueba para revisar que la funcion search - Caso 1: Request vacio" in {
@@ -58,7 +58,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"status":"Error","message":"Request vacio!!!"}""")
+      r mustBe Some(Json.parse("""{"status":"Error","message":"Request vacio!!!"}"""))
     }
     
     
@@ -79,7 +79,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"status":"Error","message":"Request no tiene todos los parametros indicados"}""")
+      r mustBe Some(Json.parse("""{"status":"Error","message":"Request no tiene todos los parametros indicados"}"""))
     }
     
     
@@ -100,7 +100,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"status":"Error","message":"Las fechas deben ser tipo String"}""")
+      r mustBe Some(Json.parse("""{"status":"Error","message":"Las fechas deben ser tipo String"}"""))
     }
     
     "Prueba para revisar que la funcion search - Caso 4: Las fechas deben tener el formato DD/MM/YYYY o DD-MM-YYYY" in {
@@ -120,7 +120,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"status":"Error","message":"Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"}""")
+      r mustBe Some(Json.parse("""{"status":"Error","message":"Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"}"""))
     }
     
     "Prueba para revisar que la funcion search - Caso 5: El parametro city debe ser un string" in {
@@ -140,7 +140,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"status":"Error","message":"El tipo del parametro 'city' debe ser String"}""")
+      r mustBe Some(Json.parse("""{"status":"Error","message":"El tipo del parametro 'city' debe ser String"}"""))
     }
     
     "Prueba para revisar que la funcion search - Caso 6: Fechas invertidas" in {
@@ -160,7 +160,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"status":"Error","message":"Las fecha de partida no puede ser anterior a la fecha de llegada!"}""")
+      r mustBe Some(Json.parse("""{"status":"Error","message":"Las fecha de partida no puede ser anterior a la fecha de llegada!"}"""))
     }
     
     "Prueba para revisar que la funcion search - Caso 7: Reserva no puede ser de CERO dias" in {
@@ -180,7 +180,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"status":"Error","message":"La reserva debe ser de por lo menos de un dia!"}""")
+      r mustBe Some(Json.parse("""{"status":"Error","message":"La reserva debe ser de por lo menos de un dia!"}"""))
     }
     
     "Prueba para revisar que la funcion search - Caso 8: Exito en la operacion" in {
@@ -201,7 +201,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"homes":[{"id":1,"name":"Las Brisas 2","description":"40m2, 2 habitaciones y un baño","location":{"address":"Calle 56a #49-70","latitude":"41.40338","longitude":"2.17403"},"city":"Colombia-Medellin","type":"Apartamento","rating":4.2,"totalAmount":100.25,"pricePerNight":100.25,"thumbnail":"https://es.seaicons.com/wp-content/uploads/2016/09/Actions-go-home-icon.png"},{"id":5,"name":"Turmalina","description":"36m2, 4 habitaciones, 1 baño con jacuzzi, luz natural e Internet","location":{"address":"Circular 3 #71-13","latitude":"6.245713","longitude":"-75.590658"},"city":"Colombia-Medellin","type":"Apartamento","rating":1.6,"totalAmount":168.98,"pricePerNight":168.98,"thumbnail":"https://cdn4.iconfinder.com/data/icons/free-large-business-icons/256/Two-storied_house_SH.png"},{"id":8,"name":"REGATA","description":"45.6m2, 6 habitaciones, 2 baños (1 con jacuzzi), terraza, desayuno gratis e Internet","location":{"address":"Carrera 52 #123-95","latitude":"6.309076","longitude":"-75.555521"},"city":"Colombia-Medellin","type":"Casa","rating":4.8,"totalAmount":305.84,"pricePerNight":305.84,"thumbnail":"https://vignette.wikia.nocookie.net/zombiefarm/images/6/66/Log_Cabin.png/revision/latest?cb=20110114173519"}]}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"homes":[{"id":1,"name":"Las Brisas 2","description":"40m2, 2 habitaciones y un baño","location":{"address":"Calle 56a #49-70","latitude":"41.40338","longitude":"2.17403"},"city":"Colombia-Medellin","type":"Apartamento","rating":4.2,"totalAmount":100.25,"pricePerNight":100.25,"thumbnail":"https://es.seaicons.com/wp-content/uploads/2016/09/Actions-go-home-icon.png"},{"id":5,"name":"Turmalina","description":"36m2, 4 habitaciones, 1 baño con jacuzzi, luz natural e Internet","location":{"address":"Circular 3 #71-13","latitude":"6.245713","longitude":"-75.590658"},"city":"Colombia-Medellin","type":"Apartamento","rating":1.6,"totalAmount":168.98,"pricePerNight":168.98,"thumbnail":"https://cdn4.iconfinder.com/data/icons/free-large-business-icons/256/Two-storied_house_SH.png"},{"id":8,"name":"REGATA","description":"45.6m2, 6 habitaciones, 2 baños (1 con jacuzzi), terraza, desayuno gratis e Internet","location":{"address":"Carrera 52 #123-95","latitude":"6.309076","longitude":"-75.555521"},"city":"Colombia-Medellin","type":"Casa","rating":4.8,"totalAmount":305.84,"pricePerNight":305.84,"thumbnail":"https://vignette.wikia.nocookie.net/zombiefarm/images/6/66/Log_Cabin.png/revision/latest?cb=20110114173519"}]}"""))
     }
     
   }
@@ -218,7 +218,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val controller = inject[HomeController]
       val r = controller.verifyIdToken("123456")
       r mustBe None
-      //val r = controller.verifyIdToken(TESTTOKEN)
+      //val r = controller.verifyIdToken(TestToken)
       //r mustBe Some("yatocapo@gmail.com")
     }
     
@@ -237,7 +237,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Request vacio!!!"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Request vacio!!!"}"""))
     }
     
     "Prueba para revisar que la funcion booking - Caso 2: No estan todos los parametros" in {
@@ -255,7 +255,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Request no tiene todos los parametros indicados"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Request no tiene todos los parametros indicados"}"""))
     }
     
     "Prueba para revisar que la funcion booking - Caso 3: No se envio token de autenticacion" in {
@@ -274,7 +274,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"No hay ninguna clave token en el encabezado"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"No hay ninguna clave token en el encabezado"}"""))
     }
     
     "Prueba para revisar que la funcion booking - Caso 4: Token no valido" in {
@@ -293,7 +293,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Token de usuario invalido"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Token de usuario invalido"}"""))
     }
     
     
@@ -308,14 +308,14 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 1
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TESTTOKEN))
+      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
       
       if (r == None)
       {
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Las fechas deben ser tipo String"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Las fechas deben ser tipo String"}"""))
     }
     
     "Prueba para revisar que la funcion booking - Caso 6: Id de la casa no es un numero" in {
@@ -327,14 +327,14 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": "5"
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TESTTOKEN))
+      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
       
       if (r == None)
       {
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"El ID del inmueble debe ser un numero"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"El ID del inmueble debe ser un numero"}"""))
     }
     
     "Prueba para revisar que la funcion booking - Caso 7: Id de la casa no existe" in {
@@ -346,14 +346,14 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": -5
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TESTTOKEN))
+      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
       
       if (r == None)
       {
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"El ID del inmueble no existe en la BD"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"El ID del inmueble no existe en la BD"}"""))
     }
     
     "Prueba para revisar que la funcion booking - Caso 8: Fechas sin formato correcto" in {
@@ -365,14 +365,14 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 1
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TESTTOKEN))
+      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
       
       if (r == None)
       {
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"}"""))
     }
     
     "Prueba para revisar que la funcion booking - Caso 9: Fechas invertidas" in {
@@ -384,14 +384,14 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 1
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TESTTOKEN))
+      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
       
       if (r == None)
       {
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Las fecha de partida no puede ser anterior a la fecha de llegada!"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Las fecha de partida no puede ser anterior a la fecha de llegada!"}"""))
     }
     
     "Prueba para revisar que la funcion booking - Caso 10: Reserva de CERO DIAS" in {
@@ -403,14 +403,14 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 1
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TESTTOKEN))
+      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
       
       if (r == None)
       {
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"La reserva debe ser de por lo menos de un dia!"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"La reserva debe ser de por lo menos de un dia!"}"""))
     }
     
     "Prueba para revisar que la funcion booking - Caso 11: Fechas solapadas" in {
@@ -422,14 +422,14 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 2
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TESTTOKEN))
+      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
       
       if (r == None)
       {
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Reserva invalida por fechas solapadas! El inmueble esta ocupado del 15-5-2019 al 19-5-2019"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":0,"mensaje":"Reserva invalida por fechas solapadas! El inmueble esta ocupado del 15-5-2019 al 19-5-2019"}"""))
     }
     
     "Prueba para revisar que la funcion booking - Caso 12: Reserva exitosa" in {
@@ -441,14 +441,14 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 9
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TESTTOKEN))
+      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
       
       if (r == None)
       {
         r mustBe None
       }
       
-      r.get mustBe Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":1,"mensaje":"Reserva con exito!!!"}""")
+      r mustBe Some(Json.parse("""{"agency":{"nit":"1234-4567-00048-6553","name":"Arrendamientos SCAD","description":"Agencia de arrendamientos para estudiantes de la Universidad de Antioquia."},"codigo":1,"mensaje":"Reserva con exito!!!"}"""))
     }
     */
     // -------------------------------------------------------------
@@ -469,21 +469,21 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val controller = inject[HomeController]
       val r = controller.countDays("15-05-2020", "5-05-2020")
       
-      r.get mustBe -10
+      r mustBe Some(-10)
     }
     
     "Prueba para revisar la funcion countDays - Caso cero (Las fechas son iguales)" in {
       val controller = inject[HomeController]
       val r = controller.countDays("02-05-2020", "02-05-2020")
       
-      r.get mustBe 0
+      r mustBe Some(0)
     }
     
     "Prueba para revisar la funcion countDays - Caso positivo (La 2da fecha es posterior a la 1er fecha)" in {
       val controller = inject[HomeController]
       val r = controller.countDays("15-05-2020", "25-05-2020")
       
-      r.get mustBe 10
+      r mustBe Some(10)
     }
     
     "Prueba para revisar la funcion dateRangesOverlap - Caso 1: Pasa por debajo del limite" in {

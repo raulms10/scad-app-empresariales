@@ -6,7 +6,7 @@ import play.api.libs.json.{JsPath, Json, Reads}
 import play.api.libs.functional.syntax._
 
 // Se crea la clase Home, donde los parametros deben coincidir con los campos de la tabla Home de la base de datos
-case class Home(id: Int, name: String, description: String, address: String, latitude: String, longitude: String, city: String, `type`: Int, rating: Double, pricePerNight: Double, thumbnail: String, agencyCode: String)
+case class Home(id: Int, name: String, description: String, address: String, latitude: String, longitude: String, city: String, typeH: Int, rating: Double, pricePerNight: Double, thumbnail: String, agencyCode: String)
 
 // Nota:
 // La palabra type ya esta reservada por scala por lo que no
