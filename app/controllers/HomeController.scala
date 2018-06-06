@@ -16,6 +16,7 @@ import com.google.firebase.database._
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.tasks.Tasks
 import java.util.concurrent.ExecutionException
+import scala.collection.mutable.ListBuffer
 
 // Controlador de la pagina web
 // NOTA: No olvidar poner >>> db: Database como parametro de la clase. OJO!
@@ -25,8 +26,8 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // +++++++++++++++++++++      CONSTANTES       ++++++++++++++++++++++
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  val Error = 0
-  val Success = 1
+  val errorCode = 0
+  val successCode = 1
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   
   // ##################################################################
@@ -71,7 +72,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   // Salida: Json con los datos de los inmuebles
   def getAllFunction :Option[JsValue] = {
     // Primero, se crea una lista vacia para manejar los datos de los inmuebles que lleguen de la BD
-    var arrayHomes = List[Home]()
+    var arrayHomes = ListBuffer[Home]()
 
     // Luego creamos una variable para realizar la conexion con la BD
     val conexion = db.getConnection()
@@ -84,7 +85,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       // Si todo salio bien, entonces recorremos cada uno de los registros obtenidos y los vamos convirtiendo a objetos Home, los cuales a su vez se agregan a una lista de apoyo
       while (resultado.next()){
         val aux = Home(resultado.getInt("id"), resultado.getString("name"), resultado.getString("description"), resultado.getString("address"), resultado.getString("latitude"), resultado.getString("longitude"), resultado.getString("city"), resultado.getInt("type"), resultado.getDouble("rating"), resultado.getDouble("pricePerNight"), resultado.getString("thumbnail"), resultado.getString("agencyCode"))
-        arrayHomes = arrayHomes :+ aux
+        arrayHomes += aux
       }
 
       // Ya con nuestros resultados preparados, cerramos la conexion y retornamos los resultados
@@ -352,7 +353,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     // Luego, si no se envio nada por el cuerpo de la peticion entonces
     if (request == None) {
       // Se retorna un mensaje de que el json request estaba vacio
-      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Request vacio!!!"))
+      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Request vacio!!!"))
     }
     else // En caso que si haya llegado un json con "algo" entonces
     {
@@ -364,7 +365,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       if (!llaves.contains("checkIn") || !llaves.contains("checkOut") || !llaves.contains("id"))
       {
         // Abortamos y retornamos un json que indica que faltan parametros
-        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Request no tiene todos los parametros indicados"))
+        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Request no tiene todos los parametros indicados"))
       }
       else // En caso que si esten los parametros entonces
       {
@@ -373,7 +374,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
         if (token == None)
         {
           // Abortamos y retornamos un json indicando que no se envio ningun token por el encabezado
-          Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "No hay ninguna clave token en el encabezado"))
+          Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "No hay ninguna clave token en el encabezado"))
         }
         else // Si el token no es nulo entonces
         {
@@ -387,7 +388,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
           if (emailToken == None)
           {
             // Abortamos y retornamos un mensaje de que el token no es valido
-            Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Token de usuario invalido"))
+            Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Token de usuario invalido"))
           }
           else // En caso que el token si sea valido entonces
           {
@@ -402,7 +403,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
             if ((arrivedDate == None) || (departureDate == None))
             {
               // Se aborta y en un json se dice que las fechas deben ser hileras
-              Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Las fechas deben ser tipo String"))
+              Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Las fechas deben ser tipo String"))
             }
             else // Si las fechas tienen el tipo correcto entonces
             {
@@ -413,7 +414,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
               if (idHome == None)
               {
                 // Aborto y retorno un json indicando que el ID del inmueble debe ser un numero entero
-                Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "El ID del inmueble debe ser un numero"))
+                Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "El ID del inmueble debe ser un numero"))
               }
               else // Si el id del inmueble tiene el tipo correcto entonces
               {
@@ -431,7 +432,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                   if (resultado1.getInt("numHomes") == 0)
                   {
                     // Aborto y retorno un json que indica que no hay ningun inmueble con el id especificado
-                    Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "El ID del inmueble no existe en la BD"))
+                    Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "El ID del inmueble no existe en la BD"))
                   }
                   else // En caso que si exista el inmueble
                   {
@@ -442,17 +443,17 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                     if (numDays == None)
                     {
                       // Se aborta y en un json se dice que las fechas no estan bien escritas
-                      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
+                      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
                     }
                     else if (numDays.get < 0) // Por otro lado, si se obtiene que la diferencia es negativa entonces
                     {
                       // Tambien aborto ya que eso significa que las fechas no tienen el orden correcto
-                      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
+                      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
                     }
                     else if (numDays.get == 0) // O si la diferencia es cero entonces
                     {
                       // Igualmente aborto porque el hospedaje minimo es de un dia
-                      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "La reserva debe ser de por lo menos de un dia!"))
+                      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "La reserva debe ser de por lo menos de un dia!"))
                     }
                     else // Ahora, si el calculo de los dias fue correcto entonces
                     {
@@ -496,7 +497,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                       if (fechasSolapadas)
                       {
                         // Aborto y retorno un mensaje de que no se puede hacer la reserva por solapamiento (Ademas digo cuales son las fecha problema)
-                        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> s"Reserva invalida por fechas solapadas! El inmueble esta ocupado del ${auxArrivedDate} al ${auxDepartureDate}"))
+                        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> s"Reserva invalida por fechas solapadas! El inmueble esta ocupado del ${auxArrivedDate} al ${auxDepartureDate}"))
                       }
                       else // Si no hay solapamiento entonces
                       {
@@ -528,7 +529,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                         conexion.close()
                         
                         // Y retorno el mensaje de exito en la operacion de reserva
-                        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Success, "mensaje" -> "Reserva con exito!!!"))
+                        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> successCode, "mensaje" -> "Reserva con exito!!!"))
                       }
                     }
                   }
@@ -538,7 +539,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                   // En caso de error, retornamos un mensaje al respecto
                   case _: Throwable =>
                     conexion.close() // Antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
-                    Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
+                    Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
                 }
               }
             }
@@ -559,7 +560,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     if (token == None)
     {
       // Se aborta y retornamos un json indicando que no se envio ningun token por el encabezado
-      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "No hay ninguna clave token en el encabezado"))
+      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "No hay ninguna clave token en el encabezado"))
     }
     else // Si se obtuvo un token entonces
     {
@@ -573,7 +574,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       if (emailToken == None)
       {
         // Abortamos y retornamos un mensaje de que el token no es valido
-        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Token de usuario invalido"))
+        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Token de usuario invalido"))
       }
       else // En caso que el token si sea valido entonces
       {
@@ -624,7 +625,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
               totalTotal = 0.0
             }
             
-            // Ya sea que se haya encolado la casa anterior o no, procedemos a tomar las fechas de la reserva presente, las tranformamos al formato DIA-MES-AÑO y obtenemos los dias de hospodaje de la reserva
+            // Ya sea que se haya encolado la casa anterior o no, procedemos a tomar las fechas de la reserva presente, las tranformamos al formato DIA-MES-ANO y obtenemos los dias de hospodaje de la reserva
             auxArrivedDate = formateadorDMY.format(result.getDate("checkIn"))
             auxDepartureDate = formateadorDMY.format(result.getDate("checkOut"))
             val numDays = countDays(auxArrivedDate, auxDepartureDate)
@@ -674,7 +675,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
           // En caso de error, retornamos un mensaje al respecto
           case _: Throwable =>
             conexion.close() // Antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
-            Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
+            Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
         }
       }
     }
@@ -691,7 +692,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     // Luego, si no se envio nada por el cuerpo de la peticion entonces
     if (request == None) {
       // Se retorna un mensaje de que el json request estaba vacio
-      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Request vacio!!!"))
+      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Request vacio!!!"))
     }
     else // En caso que si haya llegado un json con "algo" entonces
     {
@@ -703,7 +704,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       if (!llaves.contains("bookingId"))
       {
         // Abortamos y retornamos un json que indica la ausencia de tal parametro
-        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Request no tiene la clave bookingId"))
+        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Request no tiene la clave bookingId"))
       }
       else // En caso que si este la clave bookingId entonces
       {
@@ -712,7 +713,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
         if (token == None)
         {
           // Abortamos y retornamos un json indicando que no se envio ningun token por el encabezado
-          Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "No hay ninguna clave token en el encabezado"))
+          Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "No hay ninguna clave token en el encabezado"))
         }
         else // Si el token no es nulo entonces
         {
@@ -723,7 +724,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
           if (emailToken == None)
           {
             // Abortamos y retornamos un mensaje de que el token no es valido
-            Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Token de usuario invalido"))
+            Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Token de usuario invalido"))
           }
           else // En caso que el token si sea valido entonces
           {
@@ -734,7 +735,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
             if (bookingId == None)
             {
               // Aborto y retorno un json indicando que el ID de la reserva debe ser un String
-              Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "El ID de la reserva debe ser tipo texto"))
+              Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "El ID de la reserva debe ser tipo texto"))
             }
             else // Si el id de la reserva tiene el tipo correcto entonces
             {
@@ -752,7 +753,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                 if (resultado1.getInt("numBookings") == 0)
                 {
                   // Aborto y retorno un json que indica que no hay ningun inmueble con el id especificado
-                  Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "No existe una reserva con el ID especificado en la BD"))
+                  Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "No existe una reserva con el ID especificado en la BD"))
                 }
                 else // En caso que si exista el inmueble
                 {
@@ -763,7 +764,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                   conexion.close()
                   
                   // Y retorno un mensaje de exito en la operacion de eliminacion
-                  Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Success, "mensaje" -> "Cancelacion con exito!!!"))
+                  Some(Json.obj("agency" -> infoAgency.get, "codigo" -> successCode, "mensaje" -> "Cancelacion con exito!!!"))
                 }
               }
               catch
@@ -771,7 +772,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                 // En caso de error, retornamos un mensaje al respecto
                 case _: Throwable =>
                   conexion.close() // Antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
-                  Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
+                  Some(Json.obj("agency" -> infoAgency.get, "codigo" -> errorCode, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
               }
             }
           }
@@ -850,7 +851,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       val aux1 = date1.split(Array('-', '/'))
       val day1 = aux1(0).toInt // El 1er token debe ser el dia
       val month1 = aux1(1).toInt // El 2do token debe ser el mes
-      val year1 = aux1(2).toInt // El 3er token debe ser el año
+      val year1 = aux1(2).toInt // El 3er token debe ser el ano
       
       // Ahora, creamos un objeto datatime con los datos que obtuvimos de la primera fecha
       val jodaDate1 = new DateTime(year1, month1, day1, 0, 0)
@@ -859,7 +860,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       val aux2 = date2.split(Array('-', '/'))
       val day2 = aux2(0).toInt // El 1er token debe ser el dia
       val month2 = aux2(1).toInt // El 2do token debe ser el mes
-      val year2 = aux2(2).toInt // El 3er token debe ser el año
+      val year2 = aux2(2).toInt // El 3er token debe ser el ano
       
       // Y creamos otro objeto datatime con los datos que obtuvimos de la segunda fecha
       val jodaDate2 = new DateTime(year2, month2, day2, 0, 0)
@@ -888,16 +889,16 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     val aux1 = startDateA.split(Array('-', '/'))
     val day1A = aux1(0).toInt       // El 1er token debe ser el dia
     val month1A = aux1(1).toInt     // El 2do token debe ser el mes
-    val year1A = aux1(2).toInt      // El 3er token debe ser el año
+    val year1A = aux1(2).toInt      // El 3er token debe ser el ano
     
-    // Ya separado correctamente el dia, el mes y el año, creamos un objeto datatime con los datos que obtuvimos
+    // Ya separado correctamente el dia, el mes y el ano, creamos un objeto datatime con los datos que obtuvimos
     val jodaDate1A = new DateTime(year1A, month1A, day1A, 0, 0)
     
     // Luego, tokenizamos la 2da fecha del primer intervalo
     val aux2 = endDateA.split(Array('-', '/'))
     val day2A = aux2(0).toInt       // El 1er token debe ser el dia
     val month2A = aux2(1).toInt     // El 2do token debe ser el mes
-    val year2A = aux2(2).toInt      // El 3er token debe ser el año
+    val year2A = aux2(2).toInt      // El 3er token debe ser el ano
     
     // Nuevamente, creamos un objeto datatime con los datos que obtuvimos
     val jodaDate2A = new DateTime(year2A, month2A, day2A, 0, 0)
@@ -906,7 +907,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     val aux3 = startDateB.split(Array('-', '/'))
     val day1B = aux3(0).toInt       // El 1er token debe ser el dia
     val month1B = aux3(1).toInt     // El 2do token debe ser el mes
-    val year1B = aux3(2).toInt      // El 3er token debe ser el año
+    val year1B = aux3(2).toInt      // El 3er token debe ser el ano
     
     // Volvemos a crear un objeto datatime con los datos que obtuvimos
     val jodaDate1B = new DateTime(year1B, month1B, day1B, 0, 0)
@@ -915,7 +916,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     val aux4 = endDateB.split(Array('-', '/'))
     val day2B = aux4(0).toInt       // El 1er token debe ser el dia
     val month2B = aux4(1).toInt     // El 2do token debe ser el mes
-    val year2B = aux4(2).toInt      // El 3er token debe ser el año
+    val year2B = aux4(2).toInt      // El 3er token debe ser el ano
     
     // Y hacemos un ultimo objeto datatime con los datos que obtuvimos
     val jodaDate2B = new DateTime(year2B, month2B, day2B, 0, 0)

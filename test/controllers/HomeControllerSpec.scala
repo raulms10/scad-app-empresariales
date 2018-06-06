@@ -11,7 +11,7 @@ import play.api.libs.json._
 class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting {
   
   // ==== Variables o constantes comunes para todas las pruebas ====
-  val TestToken = "123456" // Poner aqui un token valido para hacer las pruebas del Realease # 2 y para el metodo de verifyId
+  val testToken = "123456" // Poner aqui un token valido para hacer las pruebas del Realease # 2 y para el metodo de verifyId
   
   " ------ Pruebas para las funciones del realase # 1 ------" should {
     
@@ -218,7 +218,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val controller = inject[HomeController]
       val r = controller.verifyIdToken("123456")
       r mustBe None
-      //val r = controller.verifyIdToken(TestToken)
+      //val r = controller.verifyIdToken(testToken)
       //r mustBe Some("yatocapo@gmail.com")
     }
     
@@ -308,7 +308,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 1
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
+      val r = controller.bookingFunction(Some(jsonAux), Some(testToken))
       
       if (r == None)
       {
@@ -327,7 +327,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": "5"
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
+      val r = controller.bookingFunction(Some(jsonAux), Some(testToken))
       
       if (r == None)
       {
@@ -346,7 +346,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": -5
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
+      val r = controller.bookingFunction(Some(jsonAux), Some(testToken))
       
       if (r == None)
       {
@@ -365,7 +365,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 1
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
+      val r = controller.bookingFunction(Some(jsonAux), Some(testToken))
       
       if (r == None)
       {
@@ -384,7 +384,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 1
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
+      val r = controller.bookingFunction(Some(jsonAux), Some(testToken))
       
       if (r == None)
       {
@@ -403,7 +403,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 1
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
+      val r = controller.bookingFunction(Some(jsonAux), Some(testToken))
       
       if (r == None)
       {
@@ -422,7 +422,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 2
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
+      val r = controller.bookingFunction(Some(jsonAux), Some(testToken))
       
       if (r == None)
       {
@@ -441,7 +441,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           "id": 9
         }
       """)
-      val r = controller.bookingFunction(Some(jsonAux), Some(TestToken))
+      val r = controller.bookingFunction(Some(jsonAux), Some(testToken))
       
       if (r == None)
       {
