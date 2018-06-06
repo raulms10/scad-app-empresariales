@@ -5,21 +5,13 @@ import javax.inject._
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
-import models.Agency
-import models.Booking
-import models.Home
+import models.{Agency, Booking, Home}
 import play.api.db._ // Este es especialmente necesario para conectarse con la BD
-import org.joda.time.DateTime
-import org.joda.time.Days
-import java.util.Date
+import org.joda.time.{DateTime, Days}
+import java.util.{Date, Calendar, TimeZone}
 import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.TimeZone
-import java.io.InputStream
-import java.io.FileInputStream
-import java.io.File
-import com.google.firebase.FirebaseApp
-import com.google.firebase.FirebaseOptions
+import java.io.{InputStream, FileInputStream, File}
+import com.google.firebase.{FirebaseApp, FirebaseOptions}
 import com.google.firebase.database._
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.tasks.Tasks
@@ -33,8 +25,8 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // +++++++++++++++++++++      CONSTANTES       ++++++++++++++++++++++
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  val ERROR = 0
-  val SUCCESS = 1
+  val Error = 0
+  val Success = 1
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   
   // ##################################################################
@@ -53,24 +45,24 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     try {
       // Luego creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
       val query = conexion.createStatement
-      val resultado = query.executeQuery("SELECT * FROM Agency");
+      val resultado = query.executeQuery("SELECT nit, name, description FROM Agency");
       resultado.next() // OJO!!! -> Esta instruccion es necesaria para poder ver/acceder correctamente al resultado
 
       // Si todo salio bien, entonces creamos un objeto agencia
-      var agency = Agency(resultado.getString("nit"), resultado.getString("name"), resultado.getString("description"));
+      val agency = Agency(resultado.getString("nit"), resultado.getString("name"), resultado.getString("description"));
 
       // Antes de terminar (sea que la consulta sea exitosa o no), cerramos la conexion a la BD
       conexion.close()
       
       // Y retornamos el objeto json con los datos de la agencia
-      return Some(Json.toJson(agency))
+      Some(Json.toJson(agency))
     }
     catch // En caso de error
     {
       // Cerramos la conexion a la BD y retornamos None
       case e: Exception => 
         conexion.close()
-        return None
+        None
     }
   }
   
@@ -97,13 +89,13 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
 
       // Ya con nuestros resultados preparados, cerramos la conexion y retornamos los resultados
       conexion.close()
-      return Some(Json.toJson(arrayHomes))
+      Some(Json.toJson(arrayHomes))
     }
     catch {
       // En caso de error, cerramos la conexion a la BD y retornamos None
       case e: Exception => 
         conexion.close()
-        return None
+        None
     }
   }
   
@@ -114,7 +106,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     // Primero que todo, si NO llego nada (o sea, None) en el cuerpo del mensaje entonces
     if (request == None) {
       // Retornamos de inmediato y con un json decimos que no recibimos nada
-      return Some(Json.obj("status" -> "Error", "message" -> "Request vacio!!!"))
+      Some(Json.obj("status" -> "Error", "message" -> "Request vacio!!!"))
     }
     else // En caso que si haya llegado un json con "algo" entonces
     {
@@ -126,7 +118,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       if (!llaves.contains("checkIn") || !llaves.contains("checkOut") || !llaves.contains("city") || !llaves.contains("type"))
       {
         // Abortamos y retornamos un json donde decimos que faltan parametros
-        return Some(Json.obj("status" -> "Error", "message" -> "Request no tiene todos los parametros indicados"))
+        Some(Json.obj("status" -> "Error", "message" -> "Request no tiene todos los parametros indicados"))
       }
       else // En caso que si esten los parametros entonces
       {
@@ -141,7 +133,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
         if ((arrivedDate == None) || (departureDate == None))
         {
           // Se aborta y en un json se dice que las fechas deben ser hileras
-          return Some(Json.obj("status" -> "Error", "message" -> "Las fechas deben ser tipo String"))
+          Some(Json.obj("status" -> "Error", "message" -> "Las fechas deben ser tipo String"))
         }
         else // Si las fechas tienen el tipo correcto entonces
         {
@@ -152,17 +144,17 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
           if (numDays == None)
           {
             // Se aborta y en un json se dice que las fechas no estan bien escritas
-            return Some(Json.obj("status" -> "Error", "message" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
+            Some(Json.obj("status" -> "Error", "message" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
           }
           else if (numDays.get < 0) // Por otro lado, si se obtiene que la diferencia es negativa entonces
           {
             // Tambien aborto ya que eso significa que las fechas no tienen el orden correcto
-            return Some(Json.obj("status" -> "Error", "message" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
+            Some(Json.obj("status" -> "Error", "message" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
           }
           else if (numDays.get == 0) // O si la diferencia es cero entonces
           {
             // Igualmente aborto porque el hospedaje minimo es de un dia
-            return Some(Json.obj("status" -> "Error", "message" -> "La reserva debe ser de por lo menos de un dia!"))
+            Some(Json.obj("status" -> "Error", "message" -> "La reserva debe ser de por lo menos de un dia!"))
           }
           else // Ahora, si el calculo de los dias fue correcto entonces
           {
@@ -207,7 +199,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
             if (cityCode == None)
             {
               // Se aborta y en un json se dice que el parametro 'city' tiene un tipo incorrecto
-              return Some(Json.obj("status" -> "Error", "message" -> "El tipo del parametro 'city' debe ser String"))
+              Some(Json.obj("status" -> "Error", "message" -> "El tipo del parametro 'city' debe ser String"))
             }
             else // Sino entonces
             {
@@ -264,7 +256,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                 conexion.close()
                 
                 // Y se retorna el Json de respuesta
-                return Some(jsonResponse)
+                Some(jsonResponse)
               }
               catch
               {
@@ -272,7 +264,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                 case _: Throwable =>
                   // Antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
                   conexion.close()
-                  return Some(Json.obj("status" -> "Error", "message" -> "Hubo un error, mientras se consultaba la BD!"))
+                  Some(Json.obj("status" -> "Error", "message" -> "Hubo un error, mientras se consultaba la BD!"))
               }
             }
           }
@@ -306,11 +298,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     }
     
     // Finalmente, retornamos verdadero si en verdad se logro la comunicacion con Firebase o falso en caso contrario
-    if (!FirebaseApp.getApps().isEmpty) {
-      return true
-    } else {
-      return false
-    }
+    if (!FirebaseApp.getApps().isEmpty) {true} else {false}
   }
   
   // Metodo para revisar que un token de Firebase es valido
@@ -325,12 +313,12 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       // Luego, tratamos de decodificar el token de modo que trato de recuperar el correo del mismo y lo retorno
       var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
       var email = decodedToken.getEmail();
-      return Some(email)
+      Some(email)
     }
     catch // En caso de error entonces retorno falso
     {
       case e:Exception=>
-      return None
+        None
     }
   }
   
@@ -345,12 +333,12 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       
       // Luego, tratamos de decodificar el token y retornamos el UID del mismo
       var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
-      return decodedToken.getUid();
+      decodedToken.getUid();
     }
     catch // En caso de error entonces retorno ERROR!
     {
       case e:Exception=>
-      return "ERROR!"
+        "ERROR!"
     }
   }
   
@@ -365,7 +353,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     // Luego, si no se envio nada por el cuerpo de la peticion entonces
     if (request == None) {
       // Se retorna un mensaje de que el json request estaba vacio
-      return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Request vacio!!!"))
+      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Request vacio!!!"))
     }
     else // En caso que si haya llegado un json con "algo" entonces
     {
@@ -377,7 +365,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       if (!llaves.contains("checkIn") || !llaves.contains("checkOut") || !llaves.contains("id"))
       {
         // Abortamos y retornamos un json que indica que faltan parametros
-        return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Request no tiene todos los parametros indicados"))
+        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Request no tiene todos los parametros indicados"))
       }
       else // En caso que si esten los parametros entonces
       {
@@ -386,7 +374,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
         if (token == None)
         {
           // Abortamos y retornamos un json indicando que no se envio ningun token por el encabezado
-          return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "No hay ninguna clave token en el encabezado"))
+          Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "No hay ninguna clave token en el encabezado"))
         }
         else // Si el token no es nulo entonces
         {
@@ -400,7 +388,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
           if (emailToken == None)
           {
             // Abortamos y retornamos un mensaje de que el token no es valido
-            return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Token de usuario invalido"))
+            Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Token de usuario invalido"))
           }
           else // En caso que el token si sea valido entonces
           {
@@ -415,7 +403,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
             if ((arrivedDate == None) || (departureDate == None))
             {
               // Se aborta y en un json se dice que las fechas deben ser hileras
-              return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fechas deben ser tipo String"))
+              Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Las fechas deben ser tipo String"))
             }
             else // Si las fechas tienen el tipo correcto entonces
             {
@@ -426,7 +414,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
               if (idHome == None)
               {
                 // Aborto y retorno un json indicando que el ID del inmueble debe ser un numero entero
-                return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "El ID del inmueble debe ser un numero"))
+                Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "El ID del inmueble debe ser un numero"))
               }
               else // Si el id del inmueble tiene el tipo correcto entonces
               {
@@ -444,7 +432,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                   if (resultado1.getInt("numHomes") == 0)
                   {
                     // Aborto y retorno un json que indica que no hay ningun inmueble con el id especificado
-                    return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "El ID del inmueble no existe en la BD"))
+                    Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "El ID del inmueble no existe en la BD"))
                   }
                   else // En caso que si exista el inmueble
                   {
@@ -455,17 +443,17 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                     if (numDays == None)
                     {
                       // Se aborta y en un json se dice que las fechas no estan bien escritas
-                      return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
+                      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Las fechas no tienen el formato DD/MM/YYYY o DD-MM-YYYY"))
                     }
                     else if (numDays.get < 0) // Por otro lado, si se obtiene que la diferencia es negativa entonces
                     {
                       // Tambien aborto ya que eso significa que las fechas no tienen el orden correcto
-                      return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
+                      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Las fecha de partida no puede ser anterior a la fecha de llegada!"))
                     }
                     else if (numDays.get == 0) // O si la diferencia es cero entonces
                     {
                       // Igualmente aborto porque el hospedaje minimo es de un dia
-                      return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "La reserva debe ser de por lo menos de un dia!"))
+                      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "La reserva debe ser de por lo menos de un dia!"))
                     }
                     else // Ahora, si el calculo de los dias fue correcto entonces
                     {
@@ -509,7 +497,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                       if (fechasSolapadas)
                       {
                         // Aborto y retorno un mensaje de que no se puede hacer la reserva por solapamiento (Ademas digo cuales son las fecha problema)
-                        return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> s"Reserva invalida por fechas solapadas! El inmueble esta ocupado del ${auxArrivedDate} al ${auxDepartureDate}"))
+                        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> s"Reserva invalida por fechas solapadas! El inmueble esta ocupado del ${auxArrivedDate} al ${auxDepartureDate}"))
                       }
                       else // Si no hay solapamiento entonces
                       {
@@ -541,7 +529,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                         conexion.close()
                         
                         // Y retorno el mensaje de exito en la operacion de reserva
-                        return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> SUCCESS, "mensaje" -> "Reserva con exito!!!"))
+                        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Success, "mensaje" -> "Reserva con exito!!!"))
                       }
                     }
                   }
@@ -551,7 +539,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                   // En caso de error, retornamos un mensaje al respecto
                   case _: Throwable =>
                     conexion.close() // Antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
-                    return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
+                    Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
                 }
               }
             }
@@ -572,7 +560,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     if (token == None)
     {
       // Se aborta y retornamos un json indicando que no se envio ningun token por el encabezado
-      return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "No hay ninguna clave token en el encabezado"))
+      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "No hay ninguna clave token en el encabezado"))
     }
     else // Si se obtuvo un token entonces
     {
@@ -586,7 +574,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       if (emailToken == None)
       {
         // Abortamos y retornamos un mensaje de que el token no es valido
-        return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Token de usuario invalido"))
+        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Token de usuario invalido"))
       }
       else // En caso que el token si sea valido entonces
       {
@@ -680,14 +668,14 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
           }
           
           // Finalmente, se retorna la info de la agencia junto a los inmuebles que se tienen reservados con cada una de sus reservas asociadas
-          return Some(Json.obj("agency" -> infoAgency.get, "homes" -> jsonHomes))
+          Some(Json.obj("agency" -> infoAgency.get, "homes" -> jsonHomes))
         }
         catch
         {
           // En caso de error, retornamos un mensaje al respecto
           case _: Throwable =>
             conexion.close() // Antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
-            return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
+            Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
         }
       }
     }
@@ -704,7 +692,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     // Luego, si no se envio nada por el cuerpo de la peticion entonces
     if (request == None) {
       // Se retorna un mensaje de que el json request estaba vacio
-      return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Request vacio!!!"))
+      Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Request vacio!!!"))
     }
     else // En caso que si haya llegado un json con "algo" entonces
     {
@@ -716,7 +704,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       if (!llaves.contains("bookingId"))
       {
         // Abortamos y retornamos un json que indica la ausencia de tal parametro
-        return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Request no tiene la clave bookingId"))
+        Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Request no tiene la clave bookingId"))
       }
       else // En caso que si este la clave bookingId entonces
       {
@@ -725,7 +713,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
         if (token == None)
         {
           // Abortamos y retornamos un json indicando que no se envio ningun token por el encabezado
-          return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "No hay ninguna clave token en el encabezado"))
+          Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "No hay ninguna clave token en el encabezado"))
         }
         else // Si el token no es nulo entonces
         {
@@ -736,7 +724,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
           if (emailToken == None)
           {
             // Abortamos y retornamos un mensaje de que el token no es valido
-            return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Token de usuario invalido"))
+            Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Token de usuario invalido"))
           }
           else // En caso que el token si sea valido entonces
           {
@@ -747,7 +735,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
             if (bookingId == None)
             {
               // Aborto y retorno un json indicando que el ID de la reserva debe ser un String
-              return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "El ID de la reserva debe ser tipo texto"))
+              Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "El ID de la reserva debe ser tipo texto"))
             }
             else // Si el id de la reserva tiene el tipo correcto entonces
             {
@@ -765,7 +753,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                 if (resultado1.getInt("numBookings") == 0)
                 {
                   // Aborto y retorno un json que indica que no hay ningun inmueble con el id especificado
-                  return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "No existe una reserva con el ID especificado en la BD"))
+                  Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "No existe una reserva con el ID especificado en la BD"))
                 }
                 else // En caso que si exista el inmueble
                 {
@@ -776,7 +764,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                   conexion.close()
                   
                   // Y retorno un mensaje de exito en la operacion de eliminacion
-                  return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> SUCCESS, "mensaje" -> "Cancelacion con exito!!!"))
+                  Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Success, "mensaje" -> "Cancelacion con exito!!!"))
                 }
               }
               catch
@@ -784,7 +772,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                 // En caso de error, retornamos un mensaje al respecto
                 case _: Throwable =>
                   conexion.close() // Antes de terminar (sea que la consulta a la BD sea exitosa o no), cerramos la conexion a la BD
-                  return Some(Json.obj("agency" -> infoAgency.get, "codigo" -> ERROR, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
+                  Some(Json.obj("agency" -> infoAgency.get, "codigo" -> Error, "mensaje" -> "Hubo un error, mientras se consultaba la BD!"))
               }
             }
           }
@@ -937,12 +925,12 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     if ((jodaDate1A.isBefore(jodaDate2B) || jodaDate1A.isEqual(jodaDate2B)) && (jodaDate2A.isAfter(jodaDate1B) || jodaDate2A.isEqual(jodaDate1B)))
     {
       // Retornamos verdadero (o sea, que los intervalos se cruzan, es decir se solapan o al menos se tocan)
-      return true
+      true
     }
     else // sino
     {
       // Retornamos falso
-      return false
+      false
     }
   }
   
