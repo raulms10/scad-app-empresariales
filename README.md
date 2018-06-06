@@ -17,17 +17,17 @@ Repositorio para el proyecto de desarrollo de aplicaciones empresariales.
 
 ## Funcionalidades
 
- * [Ver información agencia](#F1)  
- * [Ver inmuebles](#F2)  
- * [Buscar inmuebles](#F3)  
- * [Hacer una reserva](#F4)  
- * [Consultar reservas](#F5)  
- * [Cancelar una reserva](#F6)
+ * [Ver información agencia](#ver-información-agencia)  
+ * [Ver inmuebles](#ver-inmuebles)  
+ * [Buscar inmuebles](#buscar-inmuebles)  
+ * [Hacer una reserva](#hacer-una-reserva)  
+ * [Consultar reservas](#consultar-reservas)  
+ * [Cancelar una reserva](#cancelar-una-reserva)
 
 ***
 
-<a name="F1"/>
-## Ver información agencia
+## Ver información agencia  
+
 > ### GET     /v1/agency/info
 
 #### Descripción
@@ -45,8 +45,8 @@ N/A
 }
 ```
 
-<a name="F2"/>
-## Ver inmuebles
+## Ver inmuebles  
+
 > ### GET     /v1/homes/all          
 
 #### Descripción
@@ -89,8 +89,8 @@ N/A
 ]
 ```
 
-<a name="F3"/>
-## Buscar inmuebles
+## Buscar inmuebles  
+
 > ### POST    /v1/homes/search     
 
 #### Descripción
@@ -208,8 +208,7 @@ Devuelve las casas registradas según los parámetros de entrada.
 }
 ```
 
-<a name="F4"/>
-## Hacer una reserva
+## Hacer una reserva  
 
 > ### POST    /v1/homes/booking
 
@@ -388,8 +387,8 @@ Realiza la reserva del inmueble segun los parametros de entrada. Esta función r
 }
 ```
 
-<a name="F5"/>
-## Consultar reservas
+## Consultar reservas  
+
 > ### POST    /v1/homes/myBooking
 
 #### Descripción
@@ -498,8 +497,8 @@ N/A
 }
 ```
 
-<a name="F6"/>
-## Cancelar una reserva
+## Cancelar una reserva  
+
 > ### DELETE /v1/homes/removeBooking
 
 #### Descripción
