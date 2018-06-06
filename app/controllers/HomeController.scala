@@ -83,7 +83,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
 
       // Si todo salio bien, entonces recorremos cada uno de los registros obtenidos y los vamos convirtiendo a objetos Home, los cuales a su vez se agregan a una lista de apoyo
       while (resultado.next()){
-        var aux = Home(resultado.getInt("id"), resultado.getString("name"), resultado.getString("description"), resultado.getString("address"), resultado.getString("latitude"), resultado.getString("longitude"), resultado.getString("city"), resultado.getInt("type"), resultado.getDouble("rating"), resultado.getDouble("pricePerNight"), resultado.getString("thumbnail"), resultado.getString("agencyCode"))
+        val aux = Home(resultado.getInt("id"), resultado.getString("name"), resultado.getString("description"), resultado.getString("address"), resultado.getString("latitude"), resultado.getString("longitude"), resultado.getString("city"), resultado.getInt("type"), resultado.getDouble("rating"), resultado.getDouble("pricePerNight"), resultado.getString("thumbnail"), resultado.getString("agencyCode"))
         arrayHomes = arrayHomes :+ aux
       }
 
@@ -163,13 +163,13 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
             var auxQuery = "`type`= ''"
             
             // Ahora, se intenta recuperar el valor de la clave 'type' como si fuera una lista
-            var homeType = (cuerpoJson \ "type").asOpt[List[String]]
+            val homeType = (cuerpoJson \ "type").asOpt[List[String]]
             
             // Si 'type' NO es una lista entonces
             if (homeType == None)
             {
               // Trato de recuperar el valor de 'type' como si fuera un String
-              var homeType = (cuerpoJson \ "type").asOpt[String]
+              val homeType = (cuerpoJson \ "type").asOpt[String]
               
               // Y si DE VERDAD lo ES entonces
               if (!(homeType == None))
@@ -217,7 +217,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                 // Como primer query, vamos a obtener los datos de la agencia y a formatear los mismos a un json
                 val resultado1 = query.executeQuery("SELECT nit, name, description FROM Agency")
                 resultado1.next()
-                var jsonInfoAgency= Json.obj("nit" -> resultado1.getString("nit"),
+                val jsonInfoAgency = Json.obj("nit" -> resultado1.getString("nit"),
                                             "name" -> resultado1.getString("name"),
                                             "description" -> resultado1.getString("description"))
                 
@@ -235,7 +235,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                 // Despues, se crea un arreglo json vacio el cual se ira rellenando con jsons que tengan los datos de cada una de las casas
                 var arrayHomes = JsArray()
                 while (resultado2.next()){
-                  var jsonAux = Json.obj("id" -> resultado2.getInt("id"),
+                  val jsonAux = Json.obj("id" -> resultado2.getInt("id"),
                                          "name" -> resultado2.getString("name"),
                                          "description" -> resultado2.getString("description"),
                                          "location" -> Json.obj("address" -> resultado2.getString("address"), "latitude" -> resultado2.getString("latitude"), "longitude" -> resultado2.getString("longitude")),
@@ -244,8 +244,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                                          "rating" -> resultado2.getDouble("rating"),
                                          "totalAmount" -> (numDays.get)*resultado2.getDouble("pricePerNight"),
                                          "pricePerNight" -> resultado2.getDouble("pricePerNight"),
-                                         "thumbnail" -> resultado2.getString("thumbnail")
-                      )
+                                         "thumbnail" -> resultado2.getString("thumbnail"))
                   arrayHomes = arrayHomes :+ jsonAux
                 }
                 
@@ -280,7 +279,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   // Salida: Valor booleano que indica si se logro establecer conexion con Firebase
   def setFireBaseConnection :Boolean = {
     // En primer lugar, revisamos que instancias de Firebase hay vigentes
-    var fbApps = FirebaseApp.getApps()
+    val fbApps = FirebaseApp.getApps()
     
     // Si no hay ninguna instancia de conexion vigente entonces
     if (fbApps.isEmpty)
@@ -311,8 +310,8 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
     try
     {
       // Luego, tratamos de decodificar el token de modo que trato de recuperar el correo del mismo y lo retorno
-      var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
-      var email = decodedToken.getEmail();
+      val decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
+      val email = decodedToken.getEmail();
       Some(email)
     }
     catch // En caso de error entonces retorno falso
@@ -332,7 +331,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
       setFireBaseConnection
       
       // Luego, tratamos de decodificar el token y retornamos el UID del mismo
-      var decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
+      val decodedToken = Tasks.await(FirebaseAuth.getInstance().verifyIdToken(idToken))
       decodedToken.getUid();
     }
     catch // En caso de error entonces retorno ERROR!
@@ -348,7 +347,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   // Salida: Json con el resultado de la operacion
   def bookingFunction(request: Option[JsValue], token: Option[String]) : Option[JsValue] = {
     // Primero, recupero la informacion de la agencia
-    var infoAgency = getAgencyInfoFunction()
+    val infoAgency = getAgencyInfoFunction()
     
     // Luego, si no se envio nada por el cuerpo de la peticion entonces
     if (request == None) {
@@ -554,7 +553,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   // Salida: Json con el resultado de la operacion
   def getBookingFunction(token: Option[String]) :Option[JsValue] = {
     // Primero, recupero la informacion de la agencia
-    var infoAgency = getAgencyInfoFunction()
+    val infoAgency = getAgencyInfoFunction()
     
     // Luego, si no hay ningun campo token por el encabezado entonces
     if (token == None)
@@ -687,7 +686,7 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   // Salida: Json con el resultado de la operacion
   def removeBookingFunction(request: Option[JsValue], token: Option[String]) : Option[JsValue] = {
     // Primero, recupero la informacion de la agencia
-    var infoAgency = getAgencyInfoFunction()
+    val infoAgency = getAgencyInfoFunction()
     
     // Luego, si no se envio nada por el cuerpo de la peticion entonces
     if (request == None) {
