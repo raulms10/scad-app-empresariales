@@ -31,8 +31,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       {
         r mustBe None
       }
-      r.get.toString mustBe "Agency(1234-4567-00048-6553,Arrendamientos SCAD,Agencia de arrendamientos para estudiantes de la Universidad de Antioquia.)"
-
+      r.get mustBe Json.obj("nit" -> "1234-4567-00048-6553","name" -> "Arrendamientos SCAD","description" -> "Agencia de arrendamientos para estudiantes de la Universidad de Antioquia.")
     }
     
     "Prueba para revisar que la funcion de recuperacion de los datos de todos los inmuebles esta funcionando" in {
@@ -44,8 +43,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         r mustBe None
       }
       
-      val arrayHomes :List[Home] = r.get
-      val jsonAux = Json.toJson(arrayHomes(0))
+      val jsonAux = r.get(0)
       val nameHome = (jsonAux \ "name").asOpt[String].get
       
       nameHome mustBe "Las Brisas 2"

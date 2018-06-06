@@ -10,9 +10,10 @@ GET     /                           controllers.HomeController.index
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
 
 # Rutas del aplicativo ScadAppRentings
-GET     /v1/agency/info               controllers.HomeController.getAgencyInfoService
-GET     /v1/homes/all                 controllers.HomeController.getAllService
-POST    /v1/homes/search              controllers.HomeController.searchService
-POST    /v1/homes/myBooking           controllers.HomeController.getBookingService
-POST    /v1/homes/booking             controllers.HomeController.bookingService
-#DELETE  /v1/homes/removeBooking       controllers.HomeController.removeBookingService
+GET     /v1/agency/info               controllers.HomeController.serviceManager(service = "infoAgency")
+GET     /v1/homes/all                 controllers.HomeController.serviceManager(service = "allHouses")
+POST    /v1/homes/search              controllers.HomeController.serviceManager(service = "searchHouses")
+POST    /v1/homes/myBooking           controllers.HomeController.serviceManager(service = "getBookings")
+POST    /v1/homes/booking             controllers.HomeController.serviceManager(service = "booking")
+DELETE  /v1/homes/removeBooking       controllers.HomeController.serviceManager(service = "removeBooking")
+GET     /v1/homes/test                controllers.HomeController.serviceManager(service = "updateBooking")
