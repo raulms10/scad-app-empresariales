@@ -573,8 +573,6 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                       var totalTotal = 0.0                                  // Esta variable nos permitira: 1ero) Ir sumando el monto total de las reservas de cada casa, 2do) Saber cuando agregar la ultima casa y sus reservas, y 3ero) Determinar si se obtuvieron resultados en la consulta
                       var idHomeAnt = 0                                     // Esta variable nos permitira identificar cuando hay una cambio de casa (para que en la siguiente iteracion se agregue la casa anterior con sus reservas a la lista de casas reservadas)
                       var jsonAuxHome = Json.obj()                          // Esta variable me permitira conservar de manera temporal la informacion de la casa anterior
-                      var auxArrivedDate = ""                               // Con esta variable tomare la fecha de inicio de la reserva
-                      var auxDepartureDate = ""                             // Con esta variable tomare la fecha de fin de la reserva
                       val formateadorDMY = new SimpleDateFormat("d-M-y")    // Y con esta variable podre cambiar el formato de las fechas (De YMD a DMY)
                       
                       // Ahora, mientras existan resultados (reservas asociadas) al cliente se procede a:
@@ -591,9 +589,9 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
                           totalTotal = 0.0
                         }
                         
-                        // Ya sea que se haya encolado la casa anterior o no, procedemos a tomar las fechas de la reserva presente, las tranformamos al formato DIA-MES-ANO y obtenemos los dias de hospodaje de la reserva
-                        auxArrivedDate = formateadorDMY.format(result.getDate("checkIn"))
-                        auxDepartureDate = formateadorDMY.format(result.getDate("checkOut"))
+                        // Ya sea que se haya encolado la casa anterior o no, procedemos a tomar las fechas de la reserva presente, las tranformamos al formato DIA-MES-ANO y obtenemos los dias de hospedaje de la reserva
+                        val auxArrivedDate = formateadorDMY.format(result.getDate("checkIn"))
+                        val auxDepartureDate = formateadorDMY.format(result.getDate("checkOut"))
                         val numDays = countDays(auxArrivedDate, auxDepartureDate)
                         
                         // Ahora, calculamos el costo/monto individual de la reserva, el cual es igual a...
