@@ -759,43 +759,35 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   // Entrada: Nombre del servicio a solicitar
   // Salida: Accion del servicio
   def serviceManager(service: String) = Action {implicit request =>
-    try
-    {
-      // En primer lugar, invocamos el servicio que solicito el usuario
-      // y en base al retorno del servicio inicializamos la variable result (o resultado)
-      val result :Option[JsValue] = service match {
-        case "infoAgency" =>
-          getAgencyInfoFunction
-        case "allHouses" =>
-          getAllFunction
-        case "searchHouses" =>
-          searchFunction(request.body.asJson)
-        case "booking" =>
-          bookingFunction(request.body.asJson, request.headers.get("token"))
-        case "getBookings" =>
-          getBookingFunction(request.headers.get("token"))
-        case "removeBooking" =>
-          removeBookingFunction(request.body.asJson, request.headers.get("token"))
-        case everythingElse =>
-          None
-      }
-      
-      // Si el resultado es None es porque se trato de acceder a un servicio que no existe
-      if (result == None)
-      {
-        // Por tanto, retornamos un mensaje al respecto
-        BadRequest(Json.obj("status" -> "Error", "message" -> "El servicio solicitado no existe!"))
-      }
-      else // Sino
-      {
-        // Simplemente retornamos el Json que debe entregar el servicio como resultado
-        Ok(result.get)
-      }
+    // En primer lugar, invocamos el servicio que solicito el usuario
+    // y en base al retorno del servicio inicializamos la variable result (o resultado)
+    val result :Option[JsValue] = service match {
+      case "infoAgency" =>
+        getAgencyInfoFunction
+      case "allHouses" =>
+        getAllFunction
+      case "searchHouses" =>
+        searchFunction(request.body.asJson)
+      case "booking" =>
+        bookingFunction(request.body.asJson, request.headers.get("token"))
+      case "getBookings" =>
+        getBookingFunction(request.headers.get("token"))
+      case "removeBooking" =>
+        removeBookingFunction(request.body.asJson, request.headers.get("token"))
+      case everythingElse =>
+        None
     }
-    catch // En caso que se presente algun error, retornamos un mensaje al respecto
+    
+    // Si el resultado es None es porque se trato de acceder a un servicio que no existe
+    if (result == None)
     {
-      case _: Throwable =>
-        Ok(Json.obj("status" -> "Error", "message" -> "El servicio solicitado tuvo un error!\nIntentenlo mas tarde!"))
+      // Por tanto, retornamos un mensaje al respecto
+      BadRequest(Json.obj("status" -> "Error", "message" -> "El servicio solicitado no existe!"))
+    }
+    else // Sino
+    {
+      // Simplemente retornamos el Json que debe entregar el servicio como resultado
+      Ok(result.get)
     }
   }
   
