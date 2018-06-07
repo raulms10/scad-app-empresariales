@@ -72,16 +72,16 @@ class HomeController @Inject()(db: Database, cc: ControllerComponents) extends A
   // Salida: Json con los datos de los inmuebles
   def getAllFunction :Option[JsValue] = {
     // Primero, se crea una lista vacia para manejar los datos de los inmuebles que lleguen de la BD
-    var arrayHomes = ListBuffer[Home]()
+    val arrayHomes = ListBuffer[Home]()
 
     // Luego creamos una variable para realizar la conexion con la BD
     val conexion = db.getConnection()
-
+    
     try {
       // Ahora creamos una variable en donde formularemos nuestra query SQL de busqueda y la ejecutamos
       val query = conexion.createStatement
       val resultado = query.executeQuery("SELECT id, name, description, address, latitude, longitude, city, type, rating, pricePerNight, thumbnail, agencyCode FROM Home")
-
+      
       // Si todo salio bien, entonces recorremos cada uno de los registros obtenidos y los vamos convirtiendo a objetos Home, los cuales a su vez se agregan a una lista de apoyo
       while (resultado.next()){
         val aux = Home(resultado.getInt("id"), resultado.getString("name"), resultado.getString("description"), resultado.getString("address"), resultado.getString("latitude"), resultado.getString("longitude"), resultado.getString("city"), resultado.getInt("type"), resultado.getDouble("rating"), resultado.getDouble("pricePerNight"), resultado.getString("thumbnail"), resultado.getString("agencyCode"))
